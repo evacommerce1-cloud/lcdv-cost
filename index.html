@@ -1,0 +1,1748 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<meta name="googlebot" content="noindex, nofollow">
+<title>르쏭드비 원가 계산서</title>
+
+<!-- ===================================================================
+     설정 구역 — 관리자만 이 값을 채우면 됩니다.
+     =================================================================== -->
+<script>
+  window.APP_CONFIG = {
+    SUPABASE_URL:      "https://xzdxpswtxvmhcesbvbzg.supabase.co",
+    SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh6ZHhwc3d0eHZtaGNlc2J2YnpnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY2ODA0NjAsImV4cCI6MjEwMjI1NjQ2MH0.jUVSKhbPvSIWQmbQeGZzQsmGaAmmO6Ah8oFXE-cxOC0",
+    ALLOWED_EMAILS: ["evacommerce1@gmail.com"]
+  };
+</script>
+<!-- Supabase SDK 는 앱 시작 시 JS로 동적 로드합니다 (외부 스크립트 의존성 제거) -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+
+<style>
+  :root{
+    /* LEÇON DE VIE — pure white, ink black, minimal editorial */
+    --paper:#FFFFFF;        /* page background, pure white */
+    --surface:#FFFFFF;      /* card surface */
+    --surface-2:#F6F6F4;    /* subtle fill for zebra/hover */
+    --ink:#111111;          /* near-black text */
+    --ink-soft:#4A4A4A;
+    --sage:#111111;         /* accent → ink (was olive); underlines, active */
+    --sage-deep:#000000;    /* strongest accent → pure black */
+    --clay:#111111;         /* figures accent → ink (no warm tone) */
+    --line:#D0D0CC;         /* borders — crisper */
+    --line-soft:#E2E2DF;
+    --line-strong:#A8A8A3;
+    --line-black:#111111;   /* structural lines — card outline, section dividers, table frame */
+    --muted:#99999900;
+    --muted-txt:#8A8A86;
+    --radius:2px;
+    --f-display:'Inter','Noto Sans KR',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    --f-serif:'Inter','Noto Sans KR',sans-serif;
+    --f-sans:'Inter','Noto Sans KR',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    --f-mono:ui-monospace,'SFMono-Regular','Consolas',monospace;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:var(--f-sans);
+    font-size:13.5px;
+    font-weight:400;
+    line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+    letter-spacing:.01em;
+  }
+  .mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums;}
+  ::selection{background:var(--sage);color:#fff;}
+
+  /* ---------- topbar ---------- */
+  .topbar{
+    position:sticky;top:0;z-index:50;
+    display:flex;align-items:center;justify-content:space-between;
+    padding:20px 30px 16px;
+    background:var(--paper);
+    border-bottom:1.5px solid var(--line-black);
+  }
+  .brand{display:flex;flex-direction:column;gap:1px;}
+  .brand-name{
+    font-family:var(--f-display);font-weight:600;font-size:18px;
+    letter-spacing:.22em;line-height:1;color:var(--ink);text-transform:uppercase;
+  }
+  .brand-sub{
+    font-family:var(--f-sans);font-size:9.5px;font-weight:400;
+    letter-spacing:.34em;color:var(--muted-txt);text-transform:uppercase;margin-top:4px;
+  }
+  .tabs{display:flex;gap:2px;align-items:center;}
+  .tab-btn{
+    font-family:var(--f-sans);font-size:12px;font-weight:400;letter-spacing:.04em;
+    background:transparent;border:none;color:var(--muted-txt);
+    padding:8px 16px;cursor:pointer;transition:color .18s ease;position:relative;
+  }
+  .tab-btn:hover{color:var(--ink);}
+  .tab-btn.active{color:var(--ink);font-weight:500;}
+  .tab-btn.active::after{
+    content:'';position:absolute;left:16px;right:16px;bottom:0;height:2px;background:var(--line-black);
+  }
+  .conn-badge{font-family:var(--f-mono);font-size:9.5px;letter-spacing:.05em;color:var(--muted-txt);display:flex;align-items:center;margin-left:14px;padding-left:14px;border-left:1px solid var(--line);}
+  .conn-dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:6px;}
+  .conn-ok{background:#8FA382;} .conn-bad{background:#C99;}
+
+  #main{max-width:1280px;margin:0 auto;padding:26px 30px 130px;}
+
+  /* ---------- cards ---------- */
+  .card{
+    background:var(--surface);
+    border:1px solid var(--line-black);
+    border-radius:var(--radius);
+    padding:20px 22px;
+    margin-bottom:16px;
+  }
+  .eyebrow{
+    font-family:var(--f-sans);font-size:10px;font-weight:500;letter-spacing:.2em;
+    color:var(--sage-deep);text-transform:uppercase;
+    margin-bottom:16px;padding-bottom:11px;
+    border-bottom:1.5px solid var(--line-black);
+    display:flex;justify-content:space-between;align-items:baseline;
+  }
+  .eyebrow .aux{font-weight:400;color:var(--muted-txt);letter-spacing:.04em;text-transform:none;font-size:11px;}
+  label{display:block;font-size:11px;color:var(--muted-txt);margin-bottom:13px;letter-spacing:.03em;}
+  label input, label select{margin-top:5px;}
+  input, select, textarea{
+    width:100%;
+    font-family:var(--f-sans);font-size:13px;color:var(--ink);
+    background:#FFFFFF;
+    border:1px solid var(--line-strong);
+    border-radius:2px;
+    padding:8px 10px;
+    outline:none;
+    transition:border-color .14s ease, box-shadow .14s ease;
+  }
+  input::placeholder, textarea::placeholder{color:#B8B8B3;}
+  input:focus, select:focus, textarea:focus{border-color:var(--ink);box-shadow:0 0 0 1px var(--ink);background:#fff;}
+  input[type=number]{font-family:var(--f-mono);text-align:right;}
+  input[type=number]::-webkit-inner-spin-button{opacity:.35;}
+  select{cursor:pointer;}
+
+  /* ---------- buttons ---------- */
+  .btn{
+    font-family:var(--f-sans);font-size:12px;font-weight:400;letter-spacing:.03em;
+    padding:8px 16px;border-radius:2px;border:1px solid var(--line);
+    background:var(--surface);color:var(--ink-soft);cursor:pointer;
+    transition:all .14s ease;
+  }
+  .btn:hover{border-color:var(--sage);color:var(--ink);}
+  .btn.primary{background:var(--sage-deep);color:#FFFFFF;border-color:var(--sage-deep);}
+  .btn.primary:hover{background:var(--ink);border-color:var(--ink);color:#fff;}
+  .btn.danger{color:var(--clay);border-color:#D8C4B8;}
+  .btn.danger:hover{background:var(--clay);color:#fff;border-color:var(--clay);}
+  .btn.small{padding:5px 11px;font-size:11px;}
+  .mini-del,.mini-x{
+    font-family:var(--f-sans);font-size:11px;color:var(--muted-txt);
+    background:transparent;border:none;cursor:pointer;padding:2px 5px;transition:color .12s;
+  }
+  .mini-del:hover,.mini-x:hover{color:var(--clay);}
+  button.danger-armed{background:var(--clay)!important;color:#fff!important;border-color:var(--clay)!important;}
+
+  /* ---------- editor layout ---------- */
+  .editor-grid{display:grid;grid-template-columns:320px 1fr;gap:20px;align-items:start;}
+  @media (max-width:900px){.editor-grid{grid-template-columns:1fr;}}
+
+  .dropzone{
+    border:1px dashed var(--line);border-radius:2px;
+    padding:24px 10px;text-align:center;color:var(--muted-txt);font-size:11.5px;letter-spacing:.03em;
+    cursor:pointer;transition:border-color .16s ease, background .16s ease;background:var(--surface-2);
+  }
+  .dropzone:hover{border-color:var(--sage);background:#fff;}
+  .thumb-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:11px;}
+  .thumb{position:relative;width:74px;height:74px;border-radius:2px;overflow:hidden;border:1px solid var(--line);}
+  .thumb img{width:100%;height:100%;object-fit:cover;display:block;}
+  .thumb button{
+    position:absolute;top:3px;right:3px;width:18px;height:18px;line-height:16px;
+    border-radius:50%;border:none;background:rgba(42,42,40,.6);color:#fff;font-size:12px;cursor:pointer;
+  }
+
+  /* ---------- tables ---------- */
+  table{width:100%;border-collapse:collapse;font-size:12.5px;}
+  th{
+    font-family:var(--f-sans);font-size:9.5px;font-weight:500;letter-spacing:.12em;
+    text-transform:uppercase;color:var(--muted-txt);text-align:left;
+    padding:7px 6px;border-bottom:1.5px solid var(--line-black);white-space:nowrap;color:var(--ink);
+  }
+  td{padding:4px 5px;border-bottom:1px solid var(--line-soft);vertical-align:middle;}
+  td input{padding:6px 8px;font-size:12.5px;background:#fff;border:1px solid var(--line);}
+  td input:focus{background:#fff;border-color:var(--ink);box-shadow:0 0 0 1px var(--ink);}
+  tfoot td{border-top:1px solid var(--ink);border-bottom:none;font-weight:500;padding-top:9px;}
+  .readout{font-family:var(--f-mono);text-align:right;color:var(--ink-soft);font-variant-numeric:tabular-nums;}
+  .readout.strong{font-weight:500;color:var(--ink);}
+  .csz-table th, .csz-table td{text-align:center;}
+  .csz-table td:first-child, .csz-table th:first-child{text-align:left;}
+  .row-actions{display:flex;justify-content:space-between;align-items:center;margin-top:12px;gap:10px;flex-wrap:wrap;}
+  .inline-add-size{display:flex;gap:6px;}
+  .inline-add-size input{width:150px;}
+
+  .pack-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:12px 14px;}
+  .pack-field{margin-bottom:0;}
+  .subtotal-line{
+    display:flex;justify-content:space-between;align-items:baseline;
+    margin-top:14px;padding-top:12px;border-top:1px solid var(--line);
+    font-weight:500;color:var(--ink);font-size:12px;letter-spacing:.04em;
+  }
+  .subtotal-line .readout{font-size:15px;}
+
+  .summary-card{background:var(--surface);}
+  .summary-card table{font-size:13px;}
+  .summary-card td{padding:9px 4px;border-bottom:1px solid var(--line-soft);}
+  .summary-card td:first-child{color:var(--muted-txt);letter-spacing:.03em;}
+  .summary-card td:last-child{text-align:right;}
+  .summary-card tr.grand td{border-top:1px solid var(--ink);font-family:var(--f-display);font-weight:500;font-size:19px;color:var(--ink);padding-top:13px;}
+  .summary-card tr.grand td:first-child{font-family:var(--f-sans);font-size:12px;letter-spacing:.06em;}
+  .summary-card tr.mult-row td{padding-top:11px;}
+  .summary-card tr.mult-row td:first-child{color:var(--ink);font-weight:500;letter-spacing:.05em;}
+  .summary-card tr.mult-row #sum-multiple{font-family:var(--f-display);font-size:22px;font-weight:600;color:var(--clay);}
+
+  .insight-card{background:var(--surface-2);border-color:var(--line);}
+  .insight-card .ins-row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;font-size:12px;color:var(--ink-soft);}
+  .insight-card .ins-row:last-child{margin-bottom:0;}
+  .insight-card .ins-row b{font-family:var(--f-mono);font-size:14px;color:var(--ink);font-weight:500;}
+
+  .actions-bar{display:flex;gap:9px;flex-wrap:wrap;margin-bottom:20px;align-items:center;}
+  .quick-load{position:relative;}
+  .load-panel{position:absolute;top:calc(100% + 6px);right:0;width:440px;max-width:90vw;background:var(--surface);border:1px solid var(--line);border-radius:4px;box-shadow:0 12px 32px rgba(42,42,40,.18);z-index:45;display:none;overflow:hidden;}
+  .load-panel.show{display:block;}
+  .load-panel-filters{display:flex;gap:8px;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line-soft);background:var(--surface-2);}
+  .load-panel-filters select{font-family:var(--f-sans);font-size:12px;padding:7px 9px;border:1px solid var(--line);background:#fff;border-radius:2px;flex:1;}
+  .lp-count{font-family:var(--f-mono);font-size:10.5px;color:var(--muted-txt);white-space:nowrap;}
+  .lp-list{max-height:340px;overflow-y:auto;}
+  .ql-item{display:flex;align-items:center;gap:9px;padding:9px 14px;cursor:pointer;border-bottom:1px solid var(--line-soft);transition:background .1s;}
+  .ql-item:hover{background:var(--surface-2);}
+  .ql-item:last-child{border-bottom:none;}
+  .ql-style{font-family:var(--f-mono);font-size:11px;color:var(--muted-txt);min-width:90px;}
+  .ql-name{font-size:12.5px;color:var(--ink);flex:1;}
+  .ql-empty{padding:20px 12px;color:var(--muted-txt);font-size:12px;text-align:center;}
+
+  /* ---------- signature: cost seal (hangtag reimagined) ---------- */
+  .cost-seal{
+    position:fixed;right:28px;bottom:28px;z-index:60;
+    width:232px;background:var(--surface);
+    border:1px solid var(--line);border-radius:4px;
+    padding:0 20px 18px;
+    box-shadow:0 16px 46px rgba(42,42,40,.20);
+    animation:sealIn .5s cubic-bezier(.2,.7,.2,1);
+  }
+  @keyframes sealIn{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}
+  .seal-handle{
+    display:flex;align-items:center;justify-content:space-between;
+    margin:0 -20px 8px;padding:8px 14px;border-bottom:1px solid var(--line-soft);
+    cursor:grab;user-select:none;background:var(--surface-2);border-radius:4px 4px 0 0;
+    font-family:var(--f-sans);font-size:9.5px;letter-spacing:.14em;color:var(--muted-txt);text-transform:uppercase;
+  }
+  .seal-handle:active{cursor:grabbing;}
+  .seal-handle .dots{letter-spacing:2px;color:var(--line-strong,#C7C2B2);}
+  .seal-label{font-family:var(--f-sans);font-size:10px;letter-spacing:.2em;color:var(--muted-txt);text-transform:uppercase;margin-top:10px;}
+  .seal-value{font-family:var(--f-display);font-weight:600;font-size:34px;color:var(--ink);line-height:1.05;margin-top:3px;}
+  .seal-value .cur{font-size:15px;color:var(--muted-txt);margin-left:4px;font-weight:400;}
+  .seal-sub{font-family:var(--f-sans);font-size:12px;color:var(--ink-soft);margin-top:13px;display:flex;justify-content:space-between;letter-spacing:.02em;align-items:baseline;}
+  .seal-sub .mono{color:var(--ink);font-size:14px;}
+  .seal-sub.mult{align-items:baseline;margin-top:11px;padding-top:11px;border-top:1px solid var(--line-soft);}
+  .seal-sub.mult .lbl{align-self:center;}
+  .seal-sub.mult .mono{font-family:var(--f-display);font-size:30px;font-weight:600;color:var(--clay);line-height:1;}
+  @media (max-width:680px){.cost-seal{display:none;}}
+
+  /* ---------- search tab ---------- */
+  .search-toolbar{display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;align-items:center;}
+  .season-tabs{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--line-soft);}
+  .season-tab{font-family:var(--f-sans);font-size:12px;letter-spacing:.03em;padding:6px 15px;border:1px solid var(--line);background:var(--surface);color:var(--muted-txt);border-radius:999px;cursor:pointer;transition:all .14s ease;}
+  .season-tab:hover{border-color:var(--sage);color:var(--ink);}
+  .season-tab.active{background:var(--sage-deep);border-color:var(--sage-deep);color:#F2F0EA;font-weight:500;}
+  .season-add{font-family:var(--f-sans);font-size:11.5px;padding:6px 12px;border:1px dashed var(--line-strong);background:transparent;color:var(--sage-deep);border-radius:999px;cursor:pointer;margin-left:4px;}
+  .season-add:hover{border-color:var(--sage);background:var(--surface-2);}
+  .season-chip{display:inline-block;font-size:9.5px;padding:1px 7px;border-radius:3px;background:var(--surface-2);border:1px solid var(--line);color:var(--sage-deep);letter-spacing:.03em;margin-right:5px;font-family:var(--f-mono);}
+  .search-input{flex:1;min-width:220px;}
+  .stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;margin-bottom:22px;background:var(--line-soft);border:1px solid var(--line-soft);border-radius:2px;overflow:hidden;}
+  .stat-card{background:var(--surface);padding:18px 18px;}
+  .stat-num{font-family:var(--f-display);font-size:26px;font-weight:500;color:var(--ink);line-height:1;}
+  .stat-label{font-size:10px;color:var(--muted-txt);margin-top:6px;letter-spacing:.14em;text-transform:uppercase;}
+  .list-table{background:var(--surface);border:1px solid var(--line-black);border-radius:2px;}
+  .list-table th, .list-table td{padding:11px 12px;}
+  .list-table th.sortable{cursor:pointer;user-select:none;transition:color .12s;white-space:nowrap;}
+  .list-table th.sortable:hover{color:var(--ink);}
+  .list-table th.num{text-align:right;}
+  .sort-arr{color:var(--line-strong,#C7C2B2);font-size:10px;margin-left:3px;}
+  .sort-arr.on{color:var(--sage-deep);}
+  .list-table tbody tr td{font-size:13px;}
+  .season-tab-wrap{display:inline-flex;align-items:center;position:relative;}
+  .season-del{border:none;background:transparent;color:var(--muted-txt);font-size:14px;cursor:pointer;padding:0 4px;margin-left:-6px;border-radius:50%;line-height:1;}
+  .season-del:hover{color:var(--clay);}
+  .season-del[data-armed="1"]{background:var(--clay);color:#fff;font-weight:700;}
+  .current-user{font-family:var(--f-sans);font-size:11px;color:var(--sage-deep);margin-left:14px;padding-left:14px;border-left:1px solid var(--line);letter-spacing:.02em;}
+  .edit-meta{font-size:10.5px;color:var(--muted-txt);margin-top:8px;padding-top:8px;border-top:1px dashed var(--line-soft);letter-spacing:.01em;}
+  .edit-history{margin-top:8px;}
+  .edit-history summary{font-size:11px;color:var(--sage-deep);cursor:pointer;user-select:none;padding:3px 0;}
+  .edit-history summary:hover{color:var(--ink);}
+  .hist-list{margin-top:8px;max-height:280px;overflow-y:auto;padding-right:4px;}
+  .hist-entry{padding:8px 10px;margin-bottom:6px;background:var(--surface-2);border-radius:3px;border-left:2px solid var(--sage);}
+  .hist-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:5px;}
+  .hist-by{font-size:11.5px;font-weight:600;color:var(--ink);}
+  .hist-when{font-size:10px;color:var(--muted-txt);}
+  .hist-changes{margin:0;padding-left:16px;}
+  .hist-changes li{font-size:11px;color:var(--ink-soft);line-height:1.55;letter-spacing:.01em;}
+  .gate-card select{width:100%;font-size:14px;padding:11px;margin-bottom:12px;border:1px solid var(--line-strong);border-radius:2px;background:#fff;}
+  .list-table tbody tr{cursor:pointer;transition:background .12s;}
+  .list-table tbody tr:hover{background:var(--surface-2);}
+  .row-thumb{width:40px;height:40px;object-fit:cover;border-radius:2px;border:1px solid var(--line);display:block;}
+  .row-thumb.placeholder{background:var(--surface-2);position:relative;}
+  .row-thumb.placeholder::after{content:'—';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--line);}
+  .cat-chip{display:inline-block;font-size:10.5px;padding:2px 9px;border:1px solid var(--line);border-radius:999px;color:var(--ink-soft);letter-spacing:.02em;background:var(--surface-2);}
+  .empty-state{padding:50px 10px;text-align:center;color:var(--muted-txt);font-size:13px;letter-spacing:.02em;}
+  .list-style-no{font-family:var(--f-mono);font-size:11.5px;color:var(--muted-txt);}
+  .list-item-name{font-weight:500;color:var(--ink);}
+  .list-sale-name{font-size:12px;color:var(--ink-soft);}
+  .round-badge{display:inline-block;font-size:9.5px;padding:1px 8px;margin-left:6px;border-radius:999px;background:var(--sage-deep);color:#F2F0EA;letter-spacing:.03em;vertical-align:middle;font-weight:500;}
+  .grp-row{cursor:pointer;}
+  .grp-row.has-rounds td{background:linear-gradient(var(--surface-2),var(--surface-2));border-bottom:1px solid var(--line);}
+  .grp-row.has-rounds td:first-child{box-shadow:inset 3px 0 0 var(--sage);}
+  .grp-row.has-rounds:hover td{background:var(--surface-2);}
+  .expand-hint{font-size:10px;color:var(--sage-deep);margin-left:8px;letter-spacing:.02em;white-space:nowrap;}
+  .grp-row.open .expand-hint{color:var(--muted-txt);}
+  .child-row{background:#FAF9F5;}
+  .child-row.hidden{display:none;}
+  .child-row td{font-size:12px;padding-top:7px;padding-bottom:7px;}
+  .child-row td:first-child{box-shadow:inset 3px 0 0 var(--line-strong,#C7C2B2);}
+  .round-tag{display:inline-block;font-family:var(--f-mono);font-size:10.5px;padding:1px 7px;border:1px solid var(--sage);border-radius:3px;color:var(--sage-deep);margin-left:14px;font-weight:500;}
+  .sub-note{font-family:var(--f-sans);font-size:9px;color:var(--muted-txt);margin-left:4px;letter-spacing:.04em;}
+
+  /* ---------- categories tab ---------- */
+  .cat-toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:16px;}
+  .table-scroll{overflow-x:auto;background:var(--surface);border:1px solid var(--line-soft);border-radius:2px;padding:8px 10px;}
+  .cat-table td input{width:78px;}
+  .backup-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 18px;padding:14px 16px;background:var(--surface-2);border:1px solid var(--line);border-radius:2px;}
+  .backup-label{font-size:10px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--ink);margin-right:4px;}
+  .backup-hint{font-size:11px;color:var(--muted-txt);flex-basis:100%;margin-top:2px;}
+  .cat-table td:first-child input{width:158px;}
+  .cat-table td:first-child{position:sticky;left:0;background:var(--surface);}
+  .cat-table th:first-child{position:sticky;left:0;background:var(--surface);z-index:2;}
+  .hint{color:var(--muted-txt);font-size:11.5px;margin-top:14px;letter-spacing:.02em;line-height:1.6;}
+
+  /* ---------- toast ---------- */
+  #toast{
+    position:fixed;left:50%;bottom:28px;transform:translate(-50%,20px);
+    background:var(--ink);color:#F2F0EA;padding:11px 22px;border-radius:2px;
+    font-size:12.5px;letter-spacing:.03em;opacity:0;pointer-events:none;transition:all .26s ease;z-index:100;
+  }
+  #toast.show{opacity:1;transform:translate(-50%,0);}
+
+  /* ---------- login gate ---------- */
+  #gate{position:fixed;inset:0;z-index:200;background:var(--paper);display:flex;align-items:center;justify-content:center;}
+  #gate.hidden{display:none;}
+  .gate-card{background:var(--surface);border:1px solid var(--line);border-radius:3px;padding:44px 38px 34px;width:340px;max-width:90vw;text-align:center;}
+  .gate-guide{font-size:12.5px;color:var(--muted-txt);margin:0 0 18px;line-height:1.5;letter-spacing:.01em;}
+  .google-btn{width:100%;background:#fff;border:1px solid var(--line-strong,#C7C2B2);color:var(--ink);font-size:13.5px;padding:11px;display:flex;align-items:center;justify-content:center;}
+  .google-btn:hover{background:var(--surface-2);border-color:var(--ink-soft,#555);}
+  .gate-signout{width:100%;margin-top:10px;background:transparent;border:none;color:var(--muted-txt);font-size:11px;}
+  .gate-signout:hover{color:var(--ink);text-decoration:underline;}
+  #gate-step-user select{width:100%;font-size:14px;padding:11px;margin-bottom:12px;border:1px solid var(--line-strong);border-radius:2px;background:#fff;}
+  #gate-step-user .primary{width:100%;}
+  .gate-name{font-family:var(--f-display);font-weight:600;font-size:20px;letter-spacing:.22em;text-transform:uppercase;}
+  .gate-sub{font-size:9.5px;letter-spacing:.32em;color:var(--muted-txt);text-transform:uppercase;margin:6px 0 26px;}
+  .gate-card input{text-align:center;font-size:14px;padding:11px;margin-bottom:14px;letter-spacing:.1em;}
+  .gate-card .btn{width:100%;padding:12px;}
+  .gate-err{color:var(--clay);font-size:12px;min-height:17px;margin-bottom:6px;letter-spacing:.02em;}
+
+  /* =========================================================
+     PRINT — 원가계산서 프린트 레이아웃 (업로드 양식 재현)
+  ========================================================= */
+  @media screen{ .print-sheet{display:none;} }
+  @media print{
+    @page{size:A4;margin:11mm 10mm;}
+    .no-print,.topbar,.cost-seal,#gate,#toast{display:none!important;}
+    body{background:#fff;color:#000;font-size:10px;}
+    #main{max-width:100%;padding:0;}
+    .editor-grid,.card,.actions-bar{display:none!important;}
+    .print-sheet{display:block;font-family:var(--f-sans);color:#000;}
+  }
+  /* print sheet inner styling (also used offscreen) */
+  .print-sheet{background:#fff;}
+  .ps-head{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #000;padding-bottom:6px;margin-bottom:8px;}
+  .ps-title{font-family:var(--f-display);font-size:20px;font-weight:500;letter-spacing:.08em;}
+  .ps-brand{font-size:8px;letter-spacing:.3em;text-transform:uppercase;color:#444;text-align:right;line-height:1.7;}
+  .ps-meta{display:grid;grid-template-columns:repeat(4,auto);gap:2px 0;font-size:9.5px;margin-bottom:8px;}
+  .ps-meta .k{background:#eceae4;padding:3px 8px;font-weight:500;border:.5px solid #bbb;}
+  .ps-meta .v{padding:3px 8px;border:.5px solid #bbb;min-width:120px;}
+  .ps-layout{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:start;}
+  table.ps{width:100%;border-collapse:collapse;font-size:8.7px;margin-bottom:7px;}
+  table.ps th, table.ps td{border:.5px solid #999;padding:2px 4px;text-align:right;}
+  table.ps th{background:#eceae4;text-align:center;font-weight:500;font-size:8px;letter-spacing:.02em;}
+  table.ps td.l, table.ps th.l{text-align:left;}
+  table.ps td.c{text-align:center;}
+  table.ps .sec{background:#f4f2ec;font-weight:600;text-align:left;letter-spacing:.04em;}
+  table.ps tfoot td, table.ps tr.tot td{background:#eceae4;font-weight:600;}
+  .ps-final{margin-top:6px;border:1.5px solid #000;display:flex;justify-content:space-between;align-items:center;padding:7px 12px;}
+  .ps-final .lbl{font-size:9px;letter-spacing:.1em;}
+  .ps-final .amt{font-family:var(--f-display);font-size:19px;font-weight:600;color:#8a3a2a;}
+  .ps-final .mult{font-family:var(--f-display);font-size:15px;font-weight:600;color:#8a3a2a;}
+  .ps-final .mult small{font-family:var(--f-sans);font-size:9px;font-weight:400;color:#555;margin-right:3px;}
+  .ps-img{width:100%;max-height:150px;object-fit:contain;border:.5px solid #bbb;margin-bottom:6px;background:#fafafa;}
+  .ps-imgrow{display:flex;gap:6px;margin-bottom:6px;}
+  .ps-imgrow img{flex:1;min-width:0;height:120px;object-fit:contain;border:.5px solid #bbb;background:#fafafa;}
+</style>
+</head>
+<body>
+  <div id="gate" class="hidden">
+    <div class="gate-card">
+      <div class="gate-name">Leçon de Vie</div>
+      <div class="gate-sub">Cost Sheet</div>
+      <div class="gate-err" id="gate-err"></div>
+
+      <!-- 1단계: 구글 로그인 -->
+      <div id="gate-step-login">
+        <p class="gate-guide">회사 구글 계정으로 로그인하세요.</p>
+        <button class="btn google-btn" id="gate-google">
+          <svg width="17" height="17" viewBox="0 0 48 48" style="vertical-align:middle;margin-right:9px;"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+          Google로 로그인
+        </button>
+      </div>
+
+      <!-- 2단계: 작업자 선택 -->
+      <div id="gate-step-user" style="display:none;">
+        <p class="gate-guide" id="gate-welcome"></p>
+        <select id="gate-user"><option value="">— 작업자 선택 —</option></select>
+        <button class="btn primary" id="gate-enter">입장</button>
+        <button class="btn gate-signout" id="gate-signout">다른 계정으로 로그인</button>
+      </div>
+    </div>
+  </div>
+
+  <header class="topbar no-print">
+    <div class="brand">
+      <span class="brand-name">Leçon de Vie</span>
+      <span class="brand-sub">르쏭드비 · 원가 계산서</span>
+    </div>
+    <nav class="tabs">
+      <button class="tab-btn active" data-tab="editor">작성</button>
+      <button class="tab-btn" data-tab="search">목록 · 검색</button>
+      <button class="tab-btn" data-tab="categories">카테고리 DB</button>
+      <span class="conn-badge" id="conn-badge"><span class="conn-dot conn-bad"></span>연결 확인 중</span>
+      <span class="current-user" id="current-user"></span>
+    </nav>
+  </header>
+  <main id="main"></main>
+  <div id="print-mount"></div>
+
+<script id="seed-data" type="application/json">{"categories":[{"id":"cat_19fc5f51753_29004","name":"자켓(단추O)","poly":345,"hanger":950,"box":638,"qualityTag":68,"brandTag":135,"tagRing":28,"caseCost":150,"dustbag":0,"inspection":200,"barcode":100,"qc":800,"packing":1000,"picking":100,"shipping":3091},{"id":"cat_19fc5f51753_54270","name":"자켓(단추X)","poly":345,"hanger":950,"box":638,"qualityTag":68,"brandTag":135,"tagRing":28,"caseCost":0,"dustbag":0,"inspection":200,"barcode":100,"qc":800,"packing":1000,"picking":100,"shipping":3091},{"id":"cat_19fc5f51753_05541","name":"코트(단추O)","poly":460,"hanger":950,"box":638,"qualityTag":68,"brandTag":135,"tagRing":28,"caseCost":150,"dustbag":0,"inspection":200,"barcode":100,"qc":800,"packing":1000,"picking":100,"shipping":3091},{"id":"cat_19fc5f51753_76975","name":"코트(단추X)","poly":460,"hanger":950,"box":638,"qualityTag":68,"brandTag":135,"tagRing":28,"caseCost":0,"dustbag":0,"inspection":200,"barcode":100,"qc":800,"packing":1000,"picking":100,"shipping":3091},{"id":"cat_19fc5f51753_00788","name":"하의(옷걸이)","poly":440,"hanger":1030,"box":435,"qualityTag":68,"brandTag":135,"tagRing":28,"caseCost":0,"dustbag":0,"inspection":200,"barcode":100,"qc":800,"packing":1000,"picking":100,"shipping":3091},{"id":"cat_19fc5f51753_11980","name":"하의(접어/단추X)","poly":113,"hanger":0,"box":435,"qualityTag":68,"brandTag":135,"tagRing":28,"caseCost":0,"dustbag":0,"inspection":200,"barcode":100,"qc":800,"packing":1000,"picking":100,"shipping":3091},{"id":"cat_19fc5f51753_92294","name":"하의(접어/단추O)","poly":113,"hanger":0,"box":435,"qualityTag":68,"brandTag":135,"tagRing":28,"caseCost":150,"dustbag":0,"inspection":200,"barcode":100,"qc":800,"packing":1000,"picking":100,"shipping":3091},{"id":"cat_19fc5f51753_05605","name":"하의(옷걸이/단추X)","poly":440,"hanger":1030,"box":435,"qualityTag":68,"brandTag":135,"tagRing":28,"caseCost":0,"dustbag":0,"inspection":200,"barcode":100,"qc":800,"packing":1000,"picking":100,"shipping":3091},{"id":"cat_19fc5f51754_57593","name":"하의(옷걸이/단추O)","poly":440,"hanger":1030,"box":435,"qualityTag":68,"brandTag":135,"tagRing":28,"caseCost":150,"dustbag":0,"inspection":200,"barcode":100,"qc":800,"packing":1000,"picking":100,"shipping":3091},{"id":"cat_19fc5f51754_42659","name":"셔츠","poly":345,"hanger":730,"box":435,"qualityTag":68,"brandTag":135,"tagRing":28,"caseCost":0,"dustbag":0,"inspection":200,"barcode":100,"qc":800,"packing":1000,"picking":100,"shipping":3091},{"id":"cat_19fc5f51754_94640","name":"티셔츠(옷걸이)","poly":345,"hanger":560,"box":435,"qualityTag":68,"brandTag":135,"tagRing":28,"caseCost":0,"dustbag":0,"inspection":200,"barcode":100,"qc":800,"packing":1000,"picking":100,"shipping":3091},{"id":"cat_19fc5f51754_78110","name":"티셔츠(접어)","poly":113,"hanger":0,"box":435,"qualityTag":68,"brandTag":135,"tagRing":28,"caseCost":0,"dustbag":0,"inspection":200,"barcode":100,"qc":800,"packing":1000,"picking":100,"shipping":3091},{"id":"cat_19fc5f51754_14614","name":"주얼리","poly":10,"hanger":0,"box":210,"qualityTag":50,"brandTag":135,"tagRing":28,"caseCost":2200,"dustbag":1100,"inspection":200,"barcode":100,"qc":0,"packing":1000,"picking":100,"shipping":3091},{"id":"cat_19fc5f51754_70505","name":"벨트","poly":0,"hanger":0,"box":210,"qualityTag":50,"brandTag":135,"tagRing":28,"caseCost":3900,"dustbag":2300,"inspection":200,"barcode":100,"qc":800,"packing":1000,"picking":100,"shipping":3091},{"id":"cat_19fc5f51754_11562","name":"가방(중)","poly":0,"hanger":0,"box":660,"qualityTag":50,"brandTag":135,"tagRing":28,"caseCost":0,"dustbag":4400,"inspection":200,"barcode":100,"qc":800,"packing":1000,"picking":100,"shipping":3091},{"id":"cat_19fc5f51754_33590","name":"가방(대)","poly":0,"hanger":0,"box":660,"qualityTag":50,"brandTag":135,"tagRing":28,"caseCost":0,"dustbag":7700,"inspection":200,"barcode":100,"qc":800,"packing":1000,"picking":100,"shipping":3091},{"id":"cat_19fc5f51754_77973","name":"힐","poly":0,"hanger":0,"box":435,"qualityTag":50,"brandTag":135,"tagRing":28,"caseCost":7200,"dustbag":2700,"inspection":200,"barcode":100,"qc":800,"packing":1000,"picking":100,"shipping":3091},{"id":"cat_19fc5f51754_76171","name":"부츠","poly":0,"hanger":0,"box":670,"qualityTag":50,"brandTag":135,"tagRing":28,"caseCost":9500,"dustbag":4400,"inspection":200,"barcode":100,"qc":800,"packing":1000,"picking":100,"shipping":3091}],"sheets":[{"id":"sheet_19fc5f51759_61982","styleNo":"L26SPJP01","itemName":"하이넥 봄버 JP","manager":"","createdAt":1785732601689,"updatedAt":1785732601689,"images":[],"sizes":["S","M","L","XL"],"colorRows":[{"color":"베이지","qty":{"S":10,"M":10,"L":5,"XL":0}},{"color":"블랙","qty":{"S":5,"M":5,"L":5,"XL":0}}],"patternCost":324000,"sampleCost":540000,"fabricRows":[{"section":"겉감","vendor":"봅텍스","spec":"54","product":"캘론","unitPrice":14500,"yardage":2,"note":""},{"section":"안감","vendor":"포비전","spec":"59","product":"SH4-153","unitPrice":7200,"yardage":1.05,"note":""}],"trimRows":[{"section":"지퍼","vendor":"일진","spec":"5","product":"YKK 오픈지퍼","unitPrice":4200,"yardage":1,"note":""},{"section":"스냅","vendor":"일진","spec":"13MM","product":"스냅 (코팅)","unitPrice":750,"yardage":3,"note":""},{"section":"","vendor":"","spec":"13MM","product":"스냅 (밑짝)","unitPrice":350,"yardage":2,"note":""},{"section":"","vendor":"","spec":"13MM","product":"히든","unitPrice":450,"yardage":4,"note":""},{"section":"이밴드","vendor":"","spec":"50MM","product":"양면이밴드","unitPrice":280,"yardage":0.79,"note":""}],"labelRows":[{"name":"메인라벨","unitPrice":98,"qty":1},{"name":"케어라벨","unitPrice":120,"qty":1}],"categoryId":"cat_19fc5f51753_54270","packingOverride":{"poly":345,"box":638,"hanger":950,"qualityTag":68,"brandTag":135,"tagRing":28,"caseCost":0,"dustbag":0},"logisticsOverride":{"inspection":200,"barcode":100,"qc":800,"packing":1000,"picking":100,"shipping":3091},"leaflet":57,"returnExchange":50,"season":"26SS","laborFee":80000,"finishing":0,"etc":0,"devCost":21600,"devCostManual":false,"expectedSalePrice":0,"finalSalePrice":449000,"baseStyleNo":"L26SPJP01","round":1},{"id":"sheet_19fc5f51759_90580","styleNo":"L26SPJP01","itemName":"하이넥 봄버 JP","manager":"","createdAt":1785732601689,"updatedAt":1785732601689,"images":[],"sizes":["S","M","L","XL"],"colorRows":[{"color":"베이지","qty":{"S":10,"M":10,"L":5,"XL":0}},{"color":"블랙","qty":{"S":5,"M":5,"L":5,"XL":0}}],"patternCost":0,"sampleCost":0,"fabricRows":[{"section":"겉감","vendor":"봅텍스","spec":"54","product":"캘론","unitPrice":14500,"yardage":2,"note":""},{"section":"안감","vendor":"포비전","spec":"59","product":"SH4-153","unitPrice":7200,"yardage":1.05,"note":""}],"trimRows":[{"section":"지퍼","vendor":"일진","spec":"5","product":"YKK 오픈지퍼","unitPrice":4200,"yardage":1,"note":""},{"section":"스냅","vendor":"일진","spec":"13MM","product":"스냅 (코팅)","unitPrice":750,"yardage":3,"note":""},{"section":"","vendor":"","spec":"13MM","product":"스냅 (밑짝)","unitPrice":350,"yardage":2,"note":""},{"section":"","vendor":"","spec":"13MM","product":"히든","unitPrice":450,"yardage":4,"note":""},{"section":"이밴드","vendor":"","spec":"50MM","product":"양면이밴드","unitPrice":280,"yardage":0.79,"note":""}],"labelRows":[{"name":"메인라벨","unitPrice":98,"qty":1},{"name":"케어라벨","unitPrice":120,"qty":1}],"categoryId":"cat_19fc5f51753_54270","packingOverride":{"poly":345,"box":638,"hanger":950,"qualityTag":68,"brandTag":135,"tagRing":28,"caseCost":0,"dustbag":0},"logisticsOverride":{"inspection":200,"barcode":100,"qc":800,"packing":1000,"picking":100,"shipping":3091},"leaflet":57,"returnExchange":50,"season":"26SS","laborFee":75000,"finishing":0,"etc":0,"devCost":0,"devCostManual":false,"expectedSalePrice":0,"finalSalePrice":449000,"baseStyleNo":"L26SPJP01","round":2},{"id":"sheet_19fc5f51759_25751","styleNo":"L26SPPT01","itemName":"카프리 팬츠","manager":"","createdAt":1785732601689,"updatedAt":1785732601689,"images":[],"sizes":["XS","S","M","L"],"colorRows":[{"color":"블랙","qty":{"XS":5,"S":10,"M":10,"L":5}}],"patternCost":271000,"sampleCost":180000,"fabricRows":[{"section":"겉감","vendor":"필코","spec":"47","product":"살리티스","unitPrice":7400,"yardage":1.138,"note":""}],"trimRows":[{"section":"지퍼","vendor":"일진","spec":"","product":"양면바지지퍼","unitPrice":400,"yardage":1,"note":""},{"section":"심지","vendor":"","spec":"44","product":"부분심지","unitPrice":1500,"yardage":0.234,"note":""},{"section":"TC","vendor":"","spec":"44","product":"주머니감","unitPrice":1400,"yardage":0.1,"note":""},{"section":"마이깡","vendor":"","spec":"","product":"2단마이깡","unitPrice":200,"yardage":1,"note":""},{"section":"단추","vendor":"윤앤윤","spec":"15MM","product":"민자무","unitPrice":80,"yardage":1,"note":""}],"labelRows":[{"name":"메인라벨","unitPrice":98,"qty":1},{"name":"케어라벨","unitPrice":120,"qty":1}],"categoryId":"cat_19fc5f51753_05605","packingOverride":{"poly":440,"box":435,"hanger":1030,"qualityTag":68,"brandTag":135,"tagRing":28,"caseCost":0,"dustbag":0},"logisticsOverride":{"inspection":200,"barcode":100,"qc":800,"packing":1000,"picking":100,"shipping":3091},"leaflet":57,"returnExchange":50,"season":"26SS","laborFee":42000,"finishing":0,"etc":0,"devCost":15033,"devCostManual":false,"expectedSalePrice":0,"finalSalePrice":198000,"baseStyleNo":"L26SPPT01","round":1},{"id":"sheet_19fc5f51759_02785","styleNo":"L26SPPT02","itemName":"하렘팬츠","manager":"","createdAt":1785732601689,"updatedAt":1785732601689,"images":[],"sizes":["S","M","L","XL"],"colorRows":[{"color":"검정","qty":{"S":20,"M":10,"L":0,"XL":0}}],"patternCost":243000,"sampleCost":90000,"fabricRows":[{"section":"겉감","vendor":"필코","spec":"53","product":"히토미","unitPrice":9500,"yardage":1.54,"note":""}],"trimRows":[{"section":"밴드","vendor":"일진","spec":"50","product":"양면이밴드","unitPrice":280,"yardage":0.82,"note":""},{"section":"","vendor":"","spec":"10","product":"양면이밴드","unitPrice":130,"yardage":0.72,"note":""}],"labelRows":[{"name":"메인라벨","unitPrice":98,"qty":1},{"name":"케어라벨","unitPrice":120,"qty":1}],"categoryId":"cat_19fc5f51753_05605","packingOverride":{"poly":440,"box":435,"hanger":1030,"qualityTag":68,"brandTag":135,"tagRing":28,"caseCost":0,"dustbag":0},"logisticsOverride":{"inspection":200,"barcode":100,"qc":800,"packing":1000,"picking":100,"shipping":3091},"leaflet":57,"returnExchange":50,"season":"26SS","laborFee":18000,"finishing":0,"etc":0,"devCost":11100,"devCostManual":false,"expectedSalePrice":0,"finalSalePrice":178000,"baseStyleNo":"L26SPPT02","round":1},{"id":"sheet_19fc5f51759_34995","styleNo":"L26SUBL01","itemName":"레이스 슬리브리스","manager":"","createdAt":1785732601689,"updatedAt":1785732601689,"images":[],"sizes":["S","M","L","XL"],"colorRows":[{"color":"아이","qty":{"S":10,"M":5,"L":0,"XL":0}},{"color":"검정","qty":{"S":10,"M":5,"L":0,"XL":0}}],"patternCost":243000,"sampleCost":227000,"fabricRows":[{"section":"겉감","vendor":"필코","spec":"55","product":"19엘르","unitPrice":7100,"yardage":0.619,"note":""},{"section":"레이스","vendor":"라이언","spec":"","product":"CT-083","unitPrice":8857,"yardage":1,"note":""}],"trimRows":[{"section":"","vendor":"","spec":"","product":"","unitPrice":0,"yardage":0,"note":""}],"labelRows":[{"name":"메인라벨","unitPrice":98,"qty":1},{"name":"케어라벨","unitPrice":120,"qty":1}],"categoryId":"cat_19fc5f51754_94640","packingOverride":{"poly":345,"box":435,"hanger":560,"qualityTag":68,"brandTag":135,"tagRing":28,"caseCost":0,"dustbag":0},"logisticsOverride":{"inspection":200,"barcode":100,"qc":800,"packing":1000,"picking":100,"shipping":3091},"leaflet":57,"returnExchange":50,"season":"26SS","laborFee":42000,"finishing":0,"etc":0,"devCost":15667,"devCostManual":false,"expectedSalePrice":0,"finalSalePrice":178000,"baseStyleNo":"L26SUBL01","round":1},{"id":"sheet_19fc5f5175a_97251","styleNo":"L26SUBL01","itemName":"레이스 슬리브리스","manager":"","createdAt":1785732601690,"updatedAt":1785732601690,"images":[],"sizes":["S","M","L","XL"],"colorRows":[{"color":"아이","qty":{"S":10,"M":5,"L":0,"XL":0}},{"color":"검정","qty":{"S":10,"M":5,"L":0,"XL":0}}],"patternCost":0,"sampleCost":0,"fabricRows":[{"section":"겉감","vendor":"필코","spec":"55","product":"19엘르","unitPrice":7100,"yardage":0.619,"note":""},{"section":"레이스","vendor":"라이언","spec":"","product":"CT-083","unitPrice":8857,"yardage":1,"note":""}],"trimRows":[{"section":"","vendor":"","spec":"","product":"","unitPrice":0,"yardage":0,"note":""}],"labelRows":[{"name":"메인라벨","unitPrice":98,"qty":1},{"name":"케어라벨","unitPrice":120,"qty":1}],"categoryId":"cat_19fc5f51754_94640","packingOverride":{"poly":345,"box":435,"hanger":560,"qualityTag":68,"brandTag":135,"tagRing":28,"caseCost":0,"dustbag":0},"logisticsOverride":{"inspection":200,"barcode":100,"qc":800,"packing":1000,"picking":100,"shipping":3091},"leaflet":57,"returnExchange":50,"season":"26SS","laborFee":40000,"finishing":0,"etc":0,"devCost":0,"devCostManual":false,"expectedSalePrice":0,"finalSalePrice":178000,"baseStyleNo":"L26SUBL01","round":2},{"id":"sheet_19fc5f5175a_03064","styleNo":"L26SPJK01","itemName":"울실크 자켓","manager":"","createdAt":1785732601690,"updatedAt":1785732601690,"images":[],"sizes":["S","M"],"colorRows":[{"color":"버터","qty":{"S":10,"M":5}},{"color":"블랙","qty":{"S":15,"M":10}},{"color":"에쉬베이지","qty":{"S":15,"M":10}}],"patternCost":291000,"sampleCost":1000000,"fabricRows":[{"section":"겉감","vendor":"봅텍스","spec":"44","product":"셀라290","unitPrice":27000,"yardage":2.4,"note":""},{"section":"안감","vendor":"빗살트윌","spec":"44","product":"버터,베지,검정","unitPrice":2000,"yardage":1.5,"note":""},{"section":"심지","vendor":"","spec":"","product":"75D","unitPrice":500,"yardage":2.4,"note":""}],"trimRows":[{"section":"단추","vendor":"여미지단추","spec":"23","product":"봉테일","unitPrice":180,"yardage":3,"note":""},{"section":"","vendor":"단추각인비","spec":"23","product":"봉테일","unitPrice":307,"yardage":3,"note":""}],"labelRows":[{"name":"메인라벨","unitPrice":98,"qty":1},{"name":"케어라벨","unitPrice":120,"qty":1}],"categoryId":"cat_19fc5f51753_29004","packingOverride":{"poly":345,"box":638,"hanger":950,"qualityTag":68,"brandTag":135,"tagRing":28,"caseCost":150,"dustbag":0},"logisticsOverride":{"inspection":200,"barcode":100,"qc":800,"packing":1000,"picking":100,"shipping":3091},"leaflet":57,"returnExchange":50,"season":"26SS","laborFee":82000,"finishing":0,"etc":0,"devCost":19862,"devCostManual":false,"expectedSalePrice":0,"finalSalePrice":598000,"baseStyleNo":"L26SPJK01","round":1},{"id":"sheet_19fc5f5175a_21077","styleNo":"L26SPPT05","itemName":"울실크 버뮤다","manager":"","createdAt":1785732601690,"updatedAt":1785732601690,"images":[],"sizes":["S","M","L","XL"],"colorRows":[{"color":"버터","qty":{"S":10,"M":5,"L":5,"XL":0}},{"color":"블랙","qty":{"S":10,"M":10,"L":5,"XL":0}},{"color":"에쉬베이지","qty":{"S":10,"M":10,"L":5,"XL":0}}],"patternCost":150000,"sampleCost":600000,"fabricRows":[{"section":"겉감","vendor":"봅텍스","spec":"44","product":"셀라290","unitPrice":27000,"yardage":1.2,"note":""}],"trimRows":[{"section":"지퍼","vendor":"일진","spec":"","product":"YKK양면바지지퍼","unitPrice":400,"yardage":1,"note":""},{"section":"주머니감","vendor":"","spec":"44\"","product":"TC","unitPrice":1400,"yardage":0.4,"note":""},{"section":"심지","vendor":"","spec":"44\"","product":"부분심지","unitPrice":1500,"yardage":0.12,"note":""},{"section":"마이깡","vendor":"","spec":"","product":"2단마이깡","unitPrice":200,"yardage":1,"note":""},{"section":"","vendor":"","spec":"","product":"고시우라","unitPrice":2000,"yardage":1,"note":""},{"section":"속단추","vendor":"윤앤윤","spec":"15","product":"민자무","unitPrice":80,"yardage":1,"note":""}],"labelRows":[{"name":"메인라벨","unitPrice":98,"qty":1},{"name":"케어라벨","unitPrice":120,"qty":1}],"categoryId":"cat_19fc5f51753_05605","packingOverride":{"poly":440,"box":435,"hanger":1030,"qualityTag":68,"brandTag":135,"tagRing":28,"caseCost":0,"dustbag":0},"logisticsOverride":{"inspection":200,"barcode":100,"qc":800,"packing":1000,"picking":100,"shipping":3091},"leaflet":57,"returnExchange":50,"season":"26SS","laborFee":50000,"finishing":0,"etc":0,"devCost":10714,"devCostManual":false,"expectedSalePrice":0,"finalSalePrice":298000,"baseStyleNo":"L26SPPT05","round":1},{"id":"sheet_19fc5f5175a_57136","styleNo":"L26SPTS04","itemName":"텐셀 베이직 숏 슬리브","manager":"","createdAt":1785732601690,"updatedAt":1785732601690,"images":[],"sizes":["S","M","L"],"colorRows":[{"color":"화이트","qty":{"S":20,"M":10,"L":5}}],"patternCost":37500,"sampleCost":50000,"fabricRows":[{"section":"겉감","vendor":"충남섬유","spec":"52","product":"텐셀코튼","unitPrice":5600,"yardage":0.82,"note":""}],"trimRows":[{"section":"","vendor":"","spec":"","product":"","unitPrice":0,"yardage":0,"note":""}],"labelRows":[{"name":"메인라벨","unitPrice":98,"qty":1},{"name":"케어라벨","unitPrice":120,"qty":1}],"categoryId":"cat_19fc5f51754_78110","packingOverride":{"poly":113,"box":435,"hanger":0,"qualityTag":68,"brandTag":135,"tagRing":28,"caseCost":0,"dustbag":0},"logisticsOverride":{"inspection":200,"barcode":100,"qc":800,"packing":1000,"picking":100,"shipping":3091},"leaflet":57,"returnExchange":50,"season":"26SS","laborFee":12000,"finishing":0,"etc":0,"devCost":2500,"devCostManual":false,"expectedSalePrice":0,"finalSalePrice":89000,"baseStyleNo":"L26SPTS04","round":1},{"id":"sheet_19fc5f5175a_50562","styleNo":"L26SPAC01","itemName":"로퍼 크로커","manager":"","createdAt":1785732601690,"updatedAt":1785732601690,"images":[],"sizes":["225~255"],"colorRows":[{"color":"솔리드","qty":{"225~255":0}}],"patternCost":0,"sampleCost":131000,"fabricRows":[{"section":"","vendor":"","spec":"","product":"","unitPrice":0,"yardage":0,"note":""}],"trimRows":[{"section":"","vendor":"","spec":"","product":"","unitPrice":0,"yardage":0,"note":""}],"labelRows":[{"name":"메인라벨","unitPrice":98,"qty":1},{"name":"케어라벨","unitPrice":120,"qty":1}],"categoryId":"cat_19fc5f51754_77973","packingOverride":{"poly":0,"box":435,"hanger":0,"qualityTag":50,"brandTag":135,"tagRing":28,"caseCost":7200,"dustbag":2700},"logisticsOverride":{"inspection":200,"barcode":100,"qc":800,"packing":1000,"picking":100,"shipping":3091},"leaflet":57,"returnExchange":50,"season":"26SS","laborFee":131000,"finishing":0,"etc":0,"devCost":2620,"devCostManual":false,"expectedSalePrice":0,"finalSalePrice":398000,"baseStyleNo":"L26SPAC01","round":1},{"id":"sheet_19fc5f5175b_41981","styleNo":"L26SPAC02","itemName":"로퍼 솔리드","manager":"","createdAt":1785732601691,"updatedAt":1785732601691,"images":[],"sizes":["225~255"],"colorRows":[{"color":"솔리드","qty":{"225~255":0}}],"patternCost":0,"sampleCost":116000,"fabricRows":[{"section":"","vendor":"","spec":"","product":"","unitPrice":0,"yardage":0,"note":""}],"trimRows":[{"section":"","vendor":"","spec":"","product":"","unitPrice":0,"yardage":0,"note":""}],"labelRows":[{"name":"메인라벨","unitPrice":98,"qty":1},{"name":"케어라벨","unitPrice":120,"qty":1}],"categoryId":"cat_19fc5f51754_77973","packingOverride":{"poly":0,"box":435,"hanger":0,"qualityTag":50,"brandTag":135,"tagRing":28,"caseCost":7200,"dustbag":2700},"logisticsOverride":{"inspection":200,"barcode":100,"qc":800,"packing":1000,"picking":100,"shipping":3091},"leaflet":57,"returnExchange":50,"season":"26SS","laborFee":116000,"finishing":0,"etc":0,"devCost":2320,"devCostManual":false,"expectedSalePrice":0,"finalSalePrice":369000,"baseStyleNo":"L26SPAC02","round":1},{"id":"sheet_19fc5f5175b_42772","styleNo":"L26SPTS01","itemName":"V넥 언발 MTM","manager":"","createdAt":1785732601691,"updatedAt":1785732601691,"images":[],"sizes":["F"],"colorRows":[{"color":"네이비","qty":{"F":30}},{"color":"그레이","qty":{"F":30}}],"patternCost":204000,"sampleCost":100000,"fabricRows":[{"section":"겉감","vendor":"MENTONE","spec":"68","product":"뉴델리쭈리(워싱)","unitPrice":11000,"yardage":0.94,"note":""},{"section":"시보리","vendor":"","spec":"22","product":"매칭립 2*1","unitPrice":7000,"yardage":0.38,"note":""},{"section":"자수","vendor":"두울자수","spec":"","product":"소매 자수","unitPrice":1200,"yardage":1,"note":""}],"trimRows":[{"section":"테이프","vendor":"일진","spec":"10","product":"헤링본테이프","unitPrice":150,"yardage":0.37,"note":""}],"labelRows":[{"name":"메인라벨","unitPrice":98,"qty":1},{"name":"케어라벨","unitPrice":120,"qty":1}],"categoryId":"cat_19fc5f51754_78110","packingOverride":{"poly":113,"box":435,"hanger":0,"qualityTag":68,"brandTag":135,"tagRing":28,"caseCost":0,"dustbag":0},"logisticsOverride":{"inspection":200,"barcode":100,"qc":800,"packing":1000,"picking":100,"shipping":3091},"leaflet":57,"returnExchange":50,"season":"26SS","laborFee":25000,"finishing":0,"etc":0,"devCost":5067,"devCostManual":false,"expectedSalePrice":0,"finalSalePrice":198000,"baseStyleNo":"L26SPTS01","round":1},{"id":"sheet_19fc5f5175b_71333","styleNo":"L26SPDP02","itemName":"커브드 데님","manager":"","createdAt":1785732601691,"updatedAt":1785732601691,"images":[],"sizes":["S","M","L","XL"],"colorRows":[{"color":"블루","qty":{"S":26,"M":33,"L":6,"XL":0}},{"color":"화이트","qty":{"S":26,"M":33,"L":6,"XL":0}}],"patternCost":0,"sampleCost":0,"fabricRows":[{"section":"","vendor":"","spec":"","product":"","unitPrice":0,"yardage":0,"note":""}],"trimRows":[{"section":"","vendor":"","spec":"","product":"","unitPrice":0,"yardage":0,"note":""}],"labelRows":[{"name":"메인라벨","unitPrice":98,"qty":1},{"name":"케어라벨","unitPrice":120,"qty":1}],"categoryId":"cat_19fc5f51753_11980","packingOverride":{"poly":113,"box":435,"hanger":0,"qualityTag":68,"brandTag":135,"tagRing":28,"caseCost":0,"dustbag":0},"logisticsOverride":{"inspection":200,"barcode":100,"qc":800,"packing":1000,"picking":100,"shipping":3091},"leaflet":57,"returnExchange":50,"season":"26SS","laborFee":39500,"finishing":0,"etc":0,"devCost":0,"devCostManual":false,"expectedSalePrice":0,"finalSalePrice":152000,"baseStyleNo":"L26SPDP02","round":1},{"id":"sheet_19fc5f5175b_86264","styleNo":"L26SPBL01","itemName":"돌먼스카프BL","manager":"","createdAt":1785732601691,"updatedAt":1785732601691,"images":[],"sizes":["S","M","L","XL"],"colorRows":[{"color":"아이보리","qty":{"S":20,"M":10,"L":0,"XL":0}},{"color":"블랙","qty":{"S":20,"M":10,"L":0,"XL":0}}],"patternCost":182000,"sampleCost":180000,"fabricRows":[{"section":"","vendor":"리노","spec":"57","product":"비너스","unitPrice":6000,"yardage":1.14,"note":""}],"trimRows":[{"section":"","vendor":"윤앤윤","spec":"11","product":"원민자","unitPrice":80,"yardage":2,"note":""},{"section":"세파고리","vendor":"일진","spec":"","product":"단추고리","unitPrice":28,"yardage":1,"note":""}],"labelRows":[{"name":"메인라벨","unitPrice":98,"qty":1},{"name":"케어라벨","unitPrice":120,"qty":1}],"categoryId":"cat_19fc5f51754_94640","packingOverride":{"poly":345,"box":435,"hanger":560,"qualityTag":68,"brandTag":135,"tagRing":28,"caseCost":0,"dustbag":0},"logisticsOverride":{"inspection":200,"barcode":100,"qc":800,"packing":1000,"picking":100,"shipping":3091},"leaflet":57,"returnExchange":50,"season":"26SS","laborFee":40000,"finishing":0,"etc":0,"devCost":6033,"devCostManual":false,"expectedSalePrice":0,"finalSalePrice":199000,"baseStyleNo":"L26SPBL01","round":1},{"id":"sheet_19fc5f5175b_50543","styleNo":"L26SPSK01","itemName":"플리츠 밴딩 스커트","manager":"","createdAt":1785732601691,"updatedAt":1785732601691,"images":[],"sizes":["S","M","L","XL"],"colorRows":[{"color":"아이보리","qty":{"S":10,"M":10,"L":0,"XL":0}},{"color":"블랙","qty":{"S":10,"M":10,"L":0,"XL":0}}],"patternCost":167000,"sampleCost":180000,"fabricRows":[{"section":"","vendor":"리노","spec":"57","product":"비너스","unitPrice":6000,"yardage":1.096,"note":""}],"trimRows":[{"section":"안감","vendor":"일진","spec":"44","product":"스트레치안감","unitPrice":1600,"yardage":0.7,"note":""},{"section":"밴드","vendor":"","spec":"38","product":"양면E밴드","unitPrice":220,"yardage":0.41,"note":""},{"section":"지퍼","vendor":"","spec":"9\"","product":"혼솔지퍼","unitPrice":700,"yardage":1,"note":""}],"labelRows":[{"name":"메인라벨","unitPrice":98,"qty":1},{"name":"케어라벨","unitPrice":120,"qty":1}],"categoryId":"cat_19fc5f51753_05605","packingOverride":{"poly":440,"box":435,"hanger":1030,"qualityTag":68,"brandTag":135,"tagRing":28,"caseCost":0,"dustbag":0},"logisticsOverride":{"inspection":200,"barcode":100,"qc":800,"packing":1000,"picking":100,"shipping":3091},"leaflet":57,"returnExchange":50,"season":"26SS","laborFee":38000,"finishing":0,"etc":0,"devCost":8675,"devCostManual":false,"expectedSalePrice":0,"finalSalePrice":199000,"baseStyleNo":"L26SPSK01","round":1},{"id":"sheet_19fc5f5175c_19567","styleNo":"L26SPBL02","itemName":"삼각스카프 셋 BL","manager":"","createdAt":1785732601692,"updatedAt":1785732601692,"images":[],"sizes":["S","M","L","XL"],"colorRows":[{"color":"아이보리","qty":{"S":15,"M":10,"L":0,"XL":0}},{"color":"블랙","qty":{"S":15,"M":10,"L":0,"XL":0}}],"patternCost":281000,"sampleCost":270000,"fabricRows":[{"section":"겉감","vendor":"필코","spec":"55","product":"19엘르","unitPrice":7100,"yardage":1.73,"note":""},{"section":"배색","vendor":"끌림","spec":"56","product":"라인","unitPrice":4500,"yardage":0.064,"note":""}],"trimRows":[{"section":"심지","vendor":"일진","spec":"44","product":"실크심지","unitPrice":1500,"yardage":0.073,"note":""},{"section":"","vendor":"","spec":"24","product":"혼솔지퍼","unitPrice":500,"yardage":1,"note":""}],"labelRows":[{"name":"메인라벨","unitPrice":98,"qty":1},{"name":"케어라벨","unitPrice":120,"qty":1}],"categoryId":"cat_19fc5f51754_94640","packingOverride":{"poly":345,"box":435,"hanger":560,"qualityTag":68,"brandTag":135,"tagRing":28,"caseCost":0,"dustbag":0},"logisticsOverride":{"inspection":200,"barcode":100,"qc":800,"packing":1000,"picking":100,"shipping":3091},"leaflet":57,"returnExchange":50,"season":"26SS","laborFee":45000,"finishing":0,"etc":0,"devCost":11020,"devCostManual":false,"expectedSalePrice":0,"finalSalePrice":269000,"baseStyleNo":"L26SPBL02","round":1},{"id":"sheet_19fc5f5175c_68067","styleNo":"L26SPPT03","itemName":"세미와이드 슬랙스","manager":"","createdAt":1785732601692,"updatedAt":1785732601692,"images":[],"sizes":["S","M","L","XL"],"colorRows":[{"color":"아이보리","qty":{"S":10,"M":10,"L":5,"XL":0}},{"color":"브라운","qty":{"S":5,"M":10,"L":5,"XL":0}},{"color":"블랙","qty":{"S":10,"M":10,"L":5,"XL":0}}],"patternCost":173000,"sampleCost":500000,"fabricRows":[{"section":"겉감","vendor":"필코","spec":"55","product":"19엘르","unitPrice":7100,"yardage":1.55,"note":""}],"trimRows":[{"section":"안감","vendor":"일진","spec":"44","product":"스트레치안감","unitPrice":1600,"yardage":0.64,"note":""},{"section":"심지","vendor":"","spec":"44","product":"부분심지","unitPrice":1500,"yardage":0.232,"note":""},{"section":"마이깡","vendor":"","spec":"","product":"2단마이깡","unitPrice":200,"yardage":1,"note":""},{"section":"지퍼","vendor":"","spec":"","product":"바지지퍼","unitPrice":400,"yardage":1,"note":""},{"section":"속단추","vendor":"윤앤윤","spec":"15","product":"민자봉","unitPrice":80,"yardage":1,"note":""}],"labelRows":[{"name":"메인라벨","unitPrice":98,"qty":1},{"name":"케어라벨","unitPrice":120,"qty":1}],"categoryId":"cat_19fc5f51753_05605","packingOverride":{"poly":440,"box":435,"hanger":1030,"qualityTag":68,"brandTag":135,"tagRing":28,"caseCost":0,"dustbag":0},"logisticsOverride":{"inspection":200,"barcode":100,"qc":800,"packing":1000,"picking":100,"shipping":3091},"leaflet":57,"returnExchange":50,"season":"26SS","laborFee":40000,"finishing":0,"etc":0,"devCost":9614,"devCostManual":false,"expectedSalePrice":0,"finalSalePrice":239000,"baseStyleNo":"L26SPPT03","round":1},{"id":"sheet_19fc5f5175c_35819","styleNo":"L26SUBL02","itemName":"스카프 셋 슬리브리스","manager":"","createdAt":1785732601692,"updatedAt":1785732601692,"images":[],"sizes":["S","M","L","XL"],"colorRows":[{"color":"아이보리","qty":{"S":10,"M":5,"L":0,"XL":0}},{"color":"브라운","qty":{"S":10,"M":5,"L":0,"XL":0}}],"patternCost":167000,"sampleCost":400000,"fabricRows":[{"section":"겉감","vendor":"필코","spec":"55","product":"19엘르","unitPrice":7100,"yardage":1.328,"note":""}],"trimRows":[{"section":"","vendor":"","spec":"","product":"","unitPrice":0,"yardage":0,"note":""}],"labelRows":[{"name":"메인라벨","unitPrice":98,"qty":1},{"name":"케어라벨","unitPrice":120,"qty":1}],"categoryId":"cat_19fc5f51754_94640","packingOverride":{"poly":345,"box":435,"hanger":560,"qualityTag":68,"brandTag":135,"tagRing":28,"caseCost":0,"dustbag":0},"logisticsOverride":{"inspection":200,"barcode":100,"qc":800,"packing":1000,"picking":100,"shipping":3091},"leaflet":57,"returnExchange":50,"season":"26SS","laborFee":40000,"finishing":0,"etc":0,"devCost":18900,"devCostManual":false,"expectedSalePrice":0,"finalSalePrice":249000,"baseStyleNo":"L26SUBL02","round":1},{"id":"sheet_19fc5f5175c_19157","styleNo":"L26SPPT04","itemName":"레트로 부츠컷 팬츠","manager":"","createdAt":1785732601692,"updatedAt":1785732601692,"images":[],"sizes":["XS","S","M","L"],"colorRows":[{"color":"블랙","qty":{"XS":5,"S":10,"M":10,"L":5}},{"color":"브릭","qty":{"XS":5,"S":5,"M":5,"L":5}}],"patternCost":80000,"sampleCost":200000,"fabricRows":[{"section":"겉감","vendor":"필코","spec":"47","product":"살리티스","unitPrice":7400,"yardage":1.81,"note":""}],"trimRows":[{"section":"지퍼","vendor":"일진","spec":"","product":"양면바지지퍼","unitPrice":400,"yardage":1,"note":""},{"section":"심지","vendor":"","spec":"44","product":"부분심지","unitPrice":650,"yardage":0.287,"note":""},{"section":"TC","vendor":"","spec":"44","product":"주머니감","unitPrice":1400,"yardage":0.16,"note":""},{"section":"마이깡","vendor":"","spec":"","product":"2단마이깡","unitPrice":200,"yardage":1,"note":""},{"section":"단추","vendor":"윤앤윤","spec":"15MM","product":"민자무","unitPrice":80,"yardage":1,"note":""}],"labelRows":[{"name":"메인라벨","unitPrice":98,"qty":1},{"name":"케어라벨","unitPrice":120,"qty":1}],"categoryId":"cat_19fc5f51753_05605","packingOverride":{"poly":440,"box":435,"hanger":1030,"qualityTag":68,"brandTag":135,"tagRing":28,"caseCost":0,"dustbag":0},"logisticsOverride":{"inspection":200,"barcode":100,"qc":800,"packing":1000,"picking":100,"shipping":3091},"leaflet":57,"returnExchange":50,"season":"26SS","laborFee":42000,"finishing":0,"etc":0,"devCost":5600,"devCostManual":false,"expectedSalePrice":0,"finalSalePrice":235000,"baseStyleNo":"L26SPPT04","round":1},{"id":"sheet_19fc5f5175c_12298","styleNo":"L26SUBL05","itemName":"레이스 슬리브리스(다이마루)","manager":"","createdAt":1785732601692,"updatedAt":1785732601692,"images":[],"sizes":["S","M","L","XL"],"colorRows":[{"color":"화이트","qty":{"S":20,"M":10,"L":5,"XL":0}},{"color":"베이지","qty":{"S":20,"M":10,"L":5,"XL":0}},{"color":"블랙","qty":{"S":20,"M":10,"L":5,"XL":0}}],"patternCost":192000,"sampleCost":150000,"fabricRows":[{"section":"겉감","vendor":"YARD","spec":"52","product":"쿨플렉스","unitPrice":4300,"yardage":0.35,"note":""},{"section":"레이스","vendor":"R&R","spec":"","product":"9043","unitPrice":3000,"yardage":2,"note":""}],"trimRows":[{"section":"","vendor":"","spec":"","product":"","unitPrice":0,"yardage":0,"note":""}],"labelRows":[{"name":"메인라벨","unitPrice":98,"qty":1},{"name":"케어라벨","unitPrice":120,"qty":1}],"categoryId":"cat_19fc5f51754_78110","packingOverride":{"poly":113,"box":435,"hanger":0,"qualityTag":68,"brandTag":135,"tagRing":28,"caseCost":0,"dustbag":0},"logisticsOverride":{"inspection":200,"barcode":100,"qc":800,"packing":1000,"picking":100,"shipping":3091},"leaflet":57,"returnExchange":50,"season":"26SS","laborFee":15000,"finishing":0,"etc":0,"devCost":3257,"devCostManual":false,"expectedSalePrice":0,"finalSalePrice":99000,"baseStyleNo":"L26SUBL05","round":1},{"id":"sheet_19fc5f5175c_34402","styleNo":"L26SPDP04","itemName":"스판 부츠컷 데님","manager":"","createdAt":1785732601692,"updatedAt":1785732601692,"images":[],"sizes":["S","M","L","XL"],"colorRows":[{"color":"블루","qty":{"S":30,"M":38,"L":7,"XL":0}},{"color":"블랙","qty":{"S":30,"M":38,"L":7,"XL":0}}],"patternCost":0,"sampleCost":0,"fabricRows":[{"section":"","vendor":"","spec":"","product":"","unitPrice":0,"yardage":0,"note":""}],"trimRows":[{"section":"","vendor":"","spec":"","product":"","unitPrice":0,"yardage":0,"note":""}],"labelRows":[{"name":"메인라벨","unitPrice":98,"qty":1},{"name":"케어라벨","unitPrice":120,"qty":1}],"categoryId":"cat_19fc5f51753_11980","packingOverride":{"poly":113,"box":435,"hanger":0,"qualityTag":68,"brandTag":135,"tagRing":28,"caseCost":0,"dustbag":0},"logisticsOverride":{"inspection":200,"barcode":100,"qc":800,"packing":1000,"picking":100,"shipping":3091},"leaflet":57,"returnExchange":50,"season":"26SS","laborFee":38500,"finishing":0,"etc":0,"devCost":0,"devCostManual":false,"expectedSalePrice":0,"finalSalePrice":149000,"baseStyleNo":"L26SPDP04","round":1},{"id":"sheet_19fc5f5175d_71489","styleNo":"L26SPSK02","itemName":"레이스 레이어드 스커트","manager":"","createdAt":1785732601693,"updatedAt":1785732601693,"images":[],"sizes":["F"],"colorRows":[{"color":"화이트","qty":{"F":20}},{"color":"블랙","qty":{"F":20}}],"patternCost":178000,"sampleCost":100000,"fabricRows":[{"section":"겉감","vendor":"필코","spec":"57","product":"뉴나부코","unitPrice":5000,"yardage":0.47,"note":""},{"section":"","vendor":"","spec":"55","product":"S아가타","unitPrice":7600,"yardage":0.14,"note":""}],"trimRows":[{"section":"","vendor":"","spec":"","product":"","unitPrice":0,"yardage":0,"note":""}],"labelRows":[{"name":"메인라벨","unitPrice":98,"qty":1},{"name":"케어라벨","unitPrice":120,"qty":1}],"categoryId":"cat_19fc5f51753_05605","packingOverride":{"poly":440,"box":435,"hanger":1030,"qualityTag":68,"brandTag":135,"tagRing":28,"caseCost":0,"dustbag":0},"logisticsOverride":{"inspection":200,"barcode":100,"qc":800,"packing":1000,"picking":100,"shipping":3091},"leaflet":57,"returnExchange":50,"season":"26SS","laborFee":20000,"finishing":0,"etc":0,"devCost":6950,"devCostManual":false,"expectedSalePrice":0,"finalSalePrice":98000,"baseStyleNo":"L26SPSK02","round":1},{"id":"sheet_19fc5f5175d_85631","styleNo":"L26SPAC03","itemName":"레오파드 슬링백","manager":"","createdAt":1785732601693,"updatedAt":1785732601693,"images":[],"sizes":["225~255"],"colorRows":[{"color":"레오파드","qty":{"225~255":0}}],"patternCost":300000,"sampleCost":176000,"fabricRows":[{"section":"","vendor":"","spec":"","product":"","unitPrice":0,"yardage":0,"note":""}],"trimRows":[{"section":"","vendor":"","spec":"","product":"","unitPrice":0,"yardage":0,"note":""}],"labelRows":[{"name":"메인라벨","unitPrice":98,"qty":1},{"name":"케어라벨","unitPrice":120,"qty":1}],"categoryId":"cat_19fc5f51754_77973","packingOverride":{"poly":0,"box":435,"hanger":0,"qualityTag":50,"brandTag":135,"tagRing":28,"caseCost":7200,"dustbag":2700},"logisticsOverride":{"inspection":200,"barcode":100,"qc":800,"packing":1000,"picking":100,"shipping":3091},"leaflet":57,"returnExchange":50,"season":"26SS","laborFee":88000,"finishing":0,"etc":0,"devCost":9520,"devCostManual":false,"expectedSalePrice":0,"finalSalePrice":298000,"baseStyleNo":"L26SPAC03","round":1},{"id":"sheet_19fc5f5175d_11675","styleNo":"L26SPAC04","itemName":"스퀘어 미니백","manager":"","createdAt":1785732601693,"updatedAt":1785732601693,"images":[],"sizes":["F"],"colorRows":[{"color":"아이보리","qty":{"F":40}},{"color":"블랙","qty":{"F":60}}],"patternCost":0,"sampleCost":600000,"fabricRows":[{"section":"","vendor":"","spec":"","product":"","unitPrice":0,"yardage":0,"note":""}],"trimRows":[{"section":"","vendor":"","spec":"","product":"","unitPrice":0,"yardage":0,"note":""}],"labelRows":[{"name":"메인라벨","unitPrice":98,"qty":1},{"name":"케어라벨","unitPrice":120,"qty":1}],"categoryId":"cat_19fc5f51754_11562","packingOverride":{"poly":0,"box":660,"hanger":0,"qualityTag":50,"brandTag":135,"tagRing":28,"caseCost":0,"dustbag":4400},"logisticsOverride":{"inspection":200,"barcode":100,"qc":800,"packing":1000,"picking":100,"shipping":3091},"leaflet":57,"returnExchange":50,"season":"26SS","laborFee":125000,"finishing":0,"etc":0,"devCost":6750,"devCostManual":false,"expectedSalePrice":0,"finalSalePrice":469000,"baseStyleNo":"L26SPAC04","round":1},{"id":"sheet_19fc5f5175d_06639","styleNo":"L26SPTS02","itemName":"오버사이즈 TS","manager":"","createdAt":1785732601693,"updatedAt":1785732601693,"images":[],"sizes":["F"],"colorRows":[{"color":"바닐라","qty":{"F":20}}],"patternCost":281000,"sampleCost":250000,"fabricRows":[{"section":"겉감","vendor":"야소","spec":"50","product":"헤비 R/N분또","unitPrice":7500,"yardage":1.2,"note":""}],"trimRows":[{"section":"자수","vendor":"두울자수","spec":"","product":"뒷넥자수","unitPrice":2500,"yardage":1,"note":""}],"labelRows":[{"name":"메인라벨","unitPrice":98,"qty":1},{"name":"케어라벨","unitPrice":120,"qty":1}],"categoryId":"cat_19fc5f51754_78110","packingOverride":{"poly":113,"box":435,"hanger":0,"qualityTag":68,"brandTag":135,"tagRing":28,"caseCost":0,"dustbag":0},"logisticsOverride":{"inspection":200,"barcode":100,"qc":800,"packing":1000,"picking":100,"shipping":3091},"leaflet":57,"returnExchange":50,"season":"26SS","laborFee":15000,"finishing":0,"etc":0,"devCost":26550,"devCostManual":false,"expectedSalePrice":0,"finalSalePrice":98000,"baseStyleNo":"L26SPTS02","round":1},{"id":"sheet_19fc5f5175d_62065","styleNo":"L26SPTS03","itemName":"베이직 롱슬리브TS","manager":"","createdAt":1785732601693,"updatedAt":1785732601693,"images":[],"sizes":["S","M","L"],"colorRows":[{"color":"버터","qty":{"S":10,"M":10,"L":5}},{"color":"스카이블루","qty":{"S":10,"M":10,"L":5}},{"color":"화이트","qty":{"S":10,"M":15,"L":5}}],"patternCost":84000,"sampleCost":100000,"fabricRows":[{"section":"겉감","vendor":"퀸 컴퍼니","spec":"52","product":"미소거즈스판","unitPrice":5000,"yardage":1.2,"note":""}],"trimRows":[{"section":"","vendor":"","spec":"","product":"","unitPrice":0,"yardage":0,"note":""}],"labelRows":[{"name":"메인라벨","unitPrice":98,"qty":1},{"name":"케어라벨","unitPrice":120,"qty":1}],"categoryId":"cat_19fc5f51754_78110","packingOverride":{"poly":113,"box":435,"hanger":0,"qualityTag":68,"brandTag":135,"tagRing":28,"caseCost":0,"dustbag":0},"logisticsOverride":{"inspection":200,"barcode":100,"qc":800,"packing":1000,"picking":100,"shipping":3091},"leaflet":57,"returnExchange":50,"season":"26SS","laborFee":15000,"finishing":0,"etc":0,"devCost":2300,"devCostManual":false,"expectedSalePrice":0,"finalSalePrice":98000,"baseStyleNo":"L26SPTS03","round":1},{"id":"sheet_19fc5f5175d_92451","styleNo":"L26SUBL03","itemName":"볼륨 슬리브리스","manager":"","createdAt":1785732601693,"updatedAt":1785732601693,"images":[],"sizes":["F"],"colorRows":[{"color":"블랙","qty":{"F":20}}],"patternCost":260000,"sampleCost":200000,"fabricRows":[{"section":"겉감","vendor":"필코","spec":"60","product":"티비A","unitPrice":8600,"yardage":1.139,"note":""},{"section":"안감","vendor":"충남섬유","spec":"58","product":"에어리싱글","unitPrice":4600,"yardage":0.626,"note":""}],"trimRows":[{"section":"밴드","vendor":"일진","spec":"10","product":"양면밴드","unitPrice":130,"yardage":0.91,"note":""}],"labelRows":[{"name":"메인라벨","unitPrice":98,"qty":1},{"name":"케어라벨","unitPrice":120,"qty":1}],"categoryId":"cat_19fc5f51754_94640","packingOverride":{"poly":345,"box":435,"hanger":560,"qualityTag":68,"brandTag":135,"tagRing":28,"caseCost":0,"dustbag":0},"logisticsOverride":{"inspection":200,"barcode":100,"qc":800,"packing":1000,"picking":100,"shipping":3091},"leaflet":57,"returnExchange":50,"season":"26SS","laborFee":50000,"finishing":0,"etc":0,"devCost":23000,"devCostManual":false,"expectedSalePrice":0,"finalSalePrice":298000,"baseStyleNo":"L26SUBL03","round":1},{"id":"sheet_19fc5f5175d_49259","styleNo":"L26SUJK01","itemName":"린넨자켓","manager":"","createdAt":1785732601693,"updatedAt":1785732601693,"images":[],"sizes":["F"],"colorRows":[{"color":"베이지","qty":{"F":20}}],"patternCost":260000,"sampleCost":200000,"fabricRows":[{"section":"겉감","vendor":"서우텍스","spec":"58","product":"린넨스트라이프","unitPrice":20000,"yardage":2.25,"note":""}],"trimRows":[{"section":"안감","vendor":"일진","spec":"44","product":"PB타프타","unitPrice":5200,"yardage":1.5,"note":""},{"section":"심지","vendor":"","spec":"44","product":"50D심지","unitPrice":1800,"yardage":1.3,"note":""},{"section":"패드","vendor":"","spec":"20","product":"남자각패드","unitPrice":1500,"yardage":1,"note":""},{"section":"단추","vendor":"윤앤윤","spec":"23","product":"가는테 소뿔","unitPrice":460,"yardage":2,"note":""},{"section":"","vendor":"","spec":"15","product":"가는테 소뿔","unitPrice":350,"yardage":9,"note":""},{"section":"","vendor":"","spec":"","product":"단추 각인비","unitPrice":940,"yardage":1,"note":""}],"labelRows":[{"name":"메인라벨","unitPrice":98,"qty":1},{"name":"케어라벨","unitPrice":120,"qty":1}],"categoryId":"cat_19fc5f51754_94640","packingOverride":{"poly":345,"box":435,"hanger":560,"qualityTag":68,"brandTag":135,"tagRing":28,"caseCost":0,"dustbag":0},"logisticsOverride":{"inspection":200,"barcode":100,"qc":800,"packing":1000,"picking":100,"shipping":3091},"leaflet":57,"returnExchange":50,"season":"26SS","laborFee":120000,"finishing":0,"etc":0,"devCost":23000,"devCostManual":false,"expectedSalePrice":0,"finalSalePrice":598000,"baseStyleNo":"L26SUJK01","round":1},{"id":"sheet_19fc5f5175e_52225","styleNo":"L26SPAC05","itemName":"스트랩 샌들 힐","manager":"","createdAt":1785732601694,"updatedAt":1785732601694,"images":[],"sizes":["225~255"],"colorRows":[{"color":"블랙","qty":{"225~255":0}},{"color":"브라운","qty":{"225~255":0}},{"color":"레드","qty":{"225~255":0}}],"patternCost":0,"sampleCost":564000,"fabricRows":[{"section":"","vendor":"","spec":"","product":"","unitPrice":0,"yardage":0,"note":""}],"trimRows":[{"section":"","vendor":"","spec":"","product":"","unitPrice":0,"yardage":0,"note":""}],"labelRows":[{"name":"메인라벨","unitPrice":98,"qty":1},{"name":"케어라벨","unitPrice":120,"qty":1}],"categoryId":"cat_19fc5f51754_77973","packingOverride":{"poly":0,"box":435,"hanger":0,"qualityTag":50,"brandTag":135,"tagRing":28,"caseCost":7200,"dustbag":2700},"logisticsOverride":{"inspection":200,"barcode":100,"qc":800,"packing":1000,"picking":100,"shipping":3091},"leaflet":57,"returnExchange":50,"season":"26SS","laborFee":94000,"finishing":0,"etc":0,"devCost":11280,"devCostManual":false,"expectedSalePrice":0,"finalSalePrice":338000,"baseStyleNo":"L26SPAC05","round":1},{"id":"sheet_19fc5f5175e_69308","styleNo":"L26SPAC06","itemName":"레더 슬라이더","manager":"","createdAt":1785732601694,"updatedAt":1785732601694,"images":[],"sizes":["225~255"],"colorRows":[{"color":"블랙","qty":{"225~255":0}},{"color":"브라운","qty":{"225~255":0}},{"color":"레드","qty":{"225~255":0}}],"patternCost":0,"sampleCost":332000,"fabricRows":[{"section":"","vendor":"","spec":"","product":"","unitPrice":0,"yardage":0,"note":""}],"trimRows":[{"section":"","vendor":"","spec":"","product":"","unitPrice":0,"yardage":0,"note":""}],"labelRows":[{"name":"메인라벨","unitPrice":98,"qty":1},{"name":"케어라벨","unitPrice":120,"qty":1}],"categoryId":"cat_19fc5f51754_77973","packingOverride":{"poly":0,"box":435,"hanger":0,"qualityTag":50,"brandTag":135,"tagRing":28,"caseCost":7200,"dustbag":2700},"logisticsOverride":{"inspection":200,"barcode":100,"qc":800,"packing":1000,"picking":100,"shipping":3091},"leaflet":57,"returnExchange":50,"season":"26SS","laborFee":83000,"finishing":0,"etc":0,"devCost":6640,"devCostManual":false,"expectedSalePrice":0,"finalSalePrice":298000,"baseStyleNo":"L26SPAC06","round":1},{"id":"sheet_19fc5f5175e_59379","styleNo":"L26SUBL04","itemName":"꼬임 슬리브리스","manager":"","createdAt":1785732601694,"updatedAt":1785732601694,"images":[],"sizes":["S","M"],"colorRows":[{"color":"블랙","qty":{"S":15,"M":10}},{"color":"화이트","qty":{"S":15,"M":10}}],"patternCost":247000,"sampleCost":50000,"fabricRows":[{"section":"겉감","vendor":"M텍스","spec":"57","product":"쿨텐션2","unitPrice":5800,"yardage":0.817,"note":""}],"trimRows":[{"section":"","vendor":"","spec":"","product":"","unitPrice":0,"yardage":0,"note":""}],"labelRows":[{"name":"메인라벨","unitPrice":98,"qty":1},{"name":"케어라벨","unitPrice":120,"qty":1}],"categoryId":"cat_19fc5f51754_78110","packingOverride":{"poly":113,"box":435,"hanger":0,"qualityTag":68,"brandTag":135,"tagRing":28,"caseCost":0,"dustbag":0},"logisticsOverride":{"inspection":200,"barcode":100,"qc":800,"packing":1000,"picking":100,"shipping":3091},"leaflet":57,"returnExchange":50,"season":"26SS","laborFee":25000,"finishing":0,"etc":0,"devCost":5940,"devCostManual":false,"expectedSalePrice":0,"finalSalePrice":139000,"baseStyleNo":"L26SUBL04","round":1},{"id":"sheet_19fc5f5175e_30843","styleNo":"L26SUPT01","itemName":"RN투턱 팬츠","manager":"","createdAt":1785732601694,"updatedAt":1785732601694,"images":[],"sizes":["S","M","L","XL"],"colorRows":[{"color":"아이보리","qty":{"S":15,"M":15,"L":5,"XL":0}},{"color":"블랙","qty":{"S":15,"M":15,"L":5,"XL":0}}],"patternCost":204000,"sampleCost":400000,"fabricRows":[{"section":"겉감","vendor":"리노","spec":"57","product":"엔디","unitPrice":5000,"yardage":1.91,"note":""}],"trimRows":[{"section":"안감","vendor":"일진","spec":"44","product":"비침방지","unitPrice":2000,"yardage":0.64,"note":""},{"section":"심지","vendor":"","spec":"44","product":"부분심지","unitPrice":1500,"yardage":0.23,"note":""},{"section":"마이깡","vendor":"","spec":"","product":"2단마이깡","unitPrice":200,"yardage":1,"note":""},{"section":"지퍼","vendor":"","spec":"15","product":"양면바지지퍼","unitPrice":400,"yardage":1,"note":""},{"section":"속단추","vendor":"윤앤윤","spec":"15","product":"민자봉","unitPrice":80,"yardage":1,"note":""}],"labelRows":[{"name":"메인라벨","unitPrice":98,"qty":1},{"name":"케어라벨","unitPrice":120,"qty":1}],"categoryId":"cat_19fc5f51753_05605","packingOverride":{"poly":440,"box":435,"hanger":1030,"qualityTag":68,"brandTag":135,"tagRing":28,"caseCost":0,"dustbag":0},"logisticsOverride":{"inspection":200,"barcode":100,"qc":800,"packing":1000,"picking":100,"shipping":3091},"leaflet":57,"returnExchange":50,"season":"26SS","laborFee":42000,"finishing":0,"etc":0,"devCost":8629,"devCostManual":false,"expectedSalePrice":0,"finalSalePrice":198000,"baseStyleNo":"L26SUPT01","round":1},{"id":"sheet_19fc5f5175e_82464","styleNo":"L26SUPT02","itemName":"랩 팬츠","manager":"","createdAt":1785732601694,"updatedAt":1785732601694,"images":[],"sizes":["S","M","L","XL"],"colorRows":[{"color":"블랙","qty":{"S":15,"M":10,"L":5,"XL":0}}],"patternCost":257000,"sampleCost":200000,"fabricRows":[{"section":"겉감","vendor":"필코","spec":"54","product":"리앤드라","unitPrice":9400,"yardage":1.54,"note":""}],"trimRows":[{"section":"심지","vendor":"","spec":"44","product":"부분심지","unitPrice":1500,"yardage":0.24,"note":""},{"section":"마이깡","vendor":"","spec":"","product":"2단마이깡","unitPrice":200,"yardage":1,"note":""},{"section":"지퍼","vendor":"","spec":"15","product":"양면바지지퍼","unitPrice":400,"yardage":1,"note":""},{"section":"주머니감","vendor":"","spec":"44","product":"TC","unitPrice":1400,"yardage":0.14,"note":""},{"section":"고시우라","vendor":"","spec":"","product":"고시우라","unitPrice":2000,"yardage":0.8,"note":""},{"section":"단추","vendor":"윤앤윤","spec":"21","product":"민자 봉무","unitPrice":600,"yardage":2,"note":""},{"section":"속단추","vendor":"","spec":"15","product":"민자봉","unitPrice":80,"yardage":1,"note":""}],"labelRows":[{"name":"메인라벨","unitPrice":98,"qty":1},{"name":"케어라벨","unitPrice":120,"qty":1}],"categoryId":"cat_19fc5f51754_57593","packingOverride":{"poly":440,"box":435,"hanger":1030,"qualityTag":68,"brandTag":135,"tagRing":28,"caseCost":150,"dustbag":0},"logisticsOverride":{"inspection":200,"barcode":100,"qc":800,"packing":1000,"picking":100,"shipping":3091},"leaflet":57,"returnExchange":50,"season":"26SS","laborFee":45000,"finishing":0,"etc":0,"devCost":15233,"devCostManual":false,"expectedSalePrice":0,"finalSalePrice":285000,"baseStyleNo":"L26SUPT02","round":1},{"id":"sheet_19fc5f5175e_12756","styleNo":"L26SUSH02","itemName":"린넨 셔츠","manager":"","createdAt":1785732601694,"updatedAt":1785732601694,"images":[],"sizes":["F"],"colorRows":[{"color":"화이트","qty":{"F":20}},{"color":"네이비","qty":{"F":20}}],"patternCost":38500,"sampleCost":320000,"fabricRows":[{"section":"겉감","vendor":"헤리티지","spec":"57","product":"멜로디 바이오","unitPrice":7300,"yardage":1.52,"note":""}],"trimRows":[{"section":"단추","vendor":"윤앤윤","spec":"10MM","product":"삼중판무광","unitPrice":90,"yardage":10,"note":""},{"section":"","vendor":"","spec":"","product":"각인비","unitPrice":1275,"yardage":1,"note":""}],"labelRows":[{"name":"메인라벨","unitPrice":98,"qty":1},{"name":"케어라벨","unitPrice":120,"qty":1}],"categoryId":"cat_19fc5f51754_42659","packingOverride":{"poly":345,"box":435,"hanger":730,"qualityTag":68,"brandTag":135,"tagRing":28,"caseCost":0,"dustbag":0},"logisticsOverride":{"inspection":200,"barcode":100,"qc":800,"packing":1000,"picking":100,"shipping":3091},"leaflet":57,"returnExchange":50,"season":"26SS","laborFee":42000,"finishing":0,"etc":0,"devCost":8962,"devCostManual":false,"expectedSalePrice":0,"finalSalePrice":238000,"baseStyleNo":"L26SUSH02","round":1},{"id":"sheet_19fc5f5175f_16595","styleNo":"L26SPDP03","itemName":"버뮤다 데님","manager":"","createdAt":1785732601695,"updatedAt":1785732601695,"images":[],"sizes":["S","M","L","XL"],"colorRows":[{"color":"블루","qty":{"S":40,"M":35,"L":5,"XL":0}}],"patternCost":0,"sampleCost":0,"fabricRows":[{"section":"","vendor":"","spec":"","product":"","unitPrice":0,"yardage":0,"note":""}],"trimRows":[{"section":"","vendor":"","spec":"","product":"","unitPrice":0,"yardage":0,"note":""}],"labelRows":[{"name":"메인라벨","unitPrice":98,"qty":1},{"name":"케어라벨","unitPrice":120,"qty":1}],"categoryId":"cat_19fc5f51753_11980","packingOverride":{"poly":113,"box":435,"hanger":0,"qualityTag":68,"brandTag":135,"tagRing":28,"caseCost":0,"dustbag":0},"logisticsOverride":{"inspection":200,"barcode":100,"qc":800,"packing":1000,"picking":100,"shipping":3091},"leaflet":57,"returnExchange":50,"season":"26SS","laborFee":31500,"finishing":0,"etc":0,"devCost":0,"devCostManual":false,"expectedSalePrice":0,"finalSalePrice":125000,"baseStyleNo":"L26SPDP03","round":1},{"id":"sheet_19fc5f5175f_15982","styleNo":"L26SPAC07","itemName":"웨이비 백","manager":"","createdAt":1785732601695,"updatedAt":1785732601695,"images":[],"sizes":["F"],"colorRows":[{"color":"브라운","qty":{"F":40}},{"color":"블랙","qty":{"F":60}}],"patternCost":0,"sampleCost":600000,"fabricRows":[{"section":"","vendor":"","spec":"","product":"","unitPrice":0,"yardage":0,"note":""}],"trimRows":[{"section":"","vendor":"","spec":"","product":"","unitPrice":0,"yardage":0,"note":""}],"labelRows":[{"name":"메인라벨","unitPrice":98,"qty":1},{"name":"케어라벨","unitPrice":120,"qty":1}],"categoryId":"cat_19fc5f51754_33590","packingOverride":{"poly":0,"box":660,"hanger":0,"qualityTag":50,"brandTag":135,"tagRing":28,"caseCost":0,"dustbag":7700},"logisticsOverride":{"inspection":200,"barcode":100,"qc":800,"packing":1000,"picking":100,"shipping":3091},"leaflet":57,"returnExchange":50,"season":"26SS","laborFee":90000,"finishing":0,"etc":0,"devCost":6000,"devCostManual":false,"expectedSalePrice":0,"finalSalePrice":420000,"baseStyleNo":"L26SPAC07","round":1},{"id":"sheet_19fc5f5175f_85442","styleNo":"L26SUOP01","itemName":"슬립 드레스","manager":"","createdAt":1785732601695,"updatedAt":1785732601695,"images":[],"sizes":["S","M"],"colorRows":[{"color":"블랙","qty":{"S":15,"M":10}},{"color":"2차리오더","qty":{"S":14,"M":5}},{"color":"3차리오더","qty":{"S":20,"M":10}}],"patternCost":226000,"sampleCost":250000,"fabricRows":[{"section":"겉감","vendor":"필코","spec":"51","product":"레트로","unitPrice":8000,"yardage":1.9,"note":""}],"trimRows":[{"section":"부자재","vendor":"일진","spec":"","product":"O링","unitPrice":150,"yardage":2,"note":""},{"section":"부자재","vendor":"일진","spec":"","product":"8링","unitPrice":150,"yardage":2,"note":""}],"labelRows":[{"name":"메인라벨","unitPrice":98,"qty":1},{"name":"케어라벨","unitPrice":120,"qty":1}],"categoryId":"cat_19fc5f51754_94640","packingOverride":{"poly":345,"box":435,"hanger":560,"qualityTag":68,"brandTag":135,"tagRing":28,"caseCost":0,"dustbag":0},"logisticsOverride":{"inspection":200,"barcode":100,"qc":800,"packing":1000,"picking":100,"shipping":3091},"leaflet":57,"returnExchange":50,"season":"26SS","laborFee":100000,"finishing":0,"etc":0,"devCost":6432,"devCostManual":false,"expectedSalePrice":0,"finalSalePrice":398000,"baseStyleNo":"L26SUOP01","round":1},{"id":"sheet_19fc5f5175f_33148","styleNo":"L26SPKN01","itemName":"니트가디건","manager":"","createdAt":1785732601695,"updatedAt":1785732601695,"images":[],"sizes":["S","M","L"],"colorRows":[{"color":"화이트","qty":{"S":20,"M":30,"L":20}},{"color":"네이비","qty":{"S":20,"M":30,"L":20}}],"patternCost":0,"sampleCost":0,"fabricRows":[{"section":"","vendor":"","spec":"","product":"","unitPrice":0,"yardage":0,"note":""}],"trimRows":[{"section":"","vendor":"","spec":"","product":"","unitPrice":0,"yardage":0,"note":""}],"labelRows":[{"name":"메인라벨","unitPrice":98,"qty":1},{"name":"케어라벨","unitPrice":120,"qty":1}],"categoryId":"cat_19fc5f51754_78110","packingOverride":{"poly":113,"box":435,"hanger":0,"qualityTag":68,"brandTag":135,"tagRing":28,"caseCost":0,"dustbag":0},"logisticsOverride":{"inspection":200,"barcode":100,"qc":800,"packing":1000,"picking":100,"shipping":3091},"leaflet":57,"returnExchange":50,"season":"26SS","laborFee":44935,"finishing":0,"etc":0,"devCost":0,"devCostManual":false,"expectedSalePrice":0,"finalSalePrice":139000,"baseStyleNo":"L26SPKN01","round":1}],"seasons":["26SS","26FW","27SS","27FW"],"users":["김준희 대표","정민혁 이사","디자인팀","생산팀","통합관리팀","마케팅팀"]}</script>
+<script>
+/* =========================================================
+   르쏭드비 원가계산서 — 앱 로직
+========================================================= */
+const packFieldDefs = [['poly','폴리'],['hanger','옷걸이'],['box','박스'],['qualityTag','품질택'],['brandTag','브랜드택'],['tagRing','택고리'],['caseCost','케이스'],['dustbag','더스트백']];
+const logFieldDefs  = [['inspection','검수'],['barcode','바코딩'],['qc','검품'],['packing','패킹'],['picking','피킹'],['shipping','택배비']];
+
+/* ---- 시드 데이터 (엑셀에서 추출) ---- */
+let SEED = {categories:[], sheets:[], seasons:['26SS'], users:[]};
+try{ SEED = JSON.parse(document.getElementById('seed-data').textContent); }catch(e){ console.error('seed parse', e); }
+
+const state = { categories:[], index:[], current:null, tab:'editor', seasons:[], seasonFilter:'', users:[], currentUser:'', sortKey:'updatedAt', sortDir:'desc' };
+const mainEl = document.getElementById('main');
+
+/* ---- 유틸 ---- */
+function genId(p){ return (p||'id')+'_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,7); }
+function num(v){ const n=parseFloat(v); return isNaN(n)?0:n; }
+function won(n){ return Math.round(n||0).toLocaleString('ko-KR'); }
+function esc(v){ return String(v==null?'':v).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function setText(id,val){ const el=document.getElementById(id); if(el) el.textContent=val; }
+function setPath(obj,path,value){ const p=path.split('.'); let c=obj; for(let i=0;i<p.length-1;i++)c=c[p[i]]; c[p[p.length-1]]=value; }
+function toast(msg){ let el=document.getElementById('toast'); if(!el){el=document.createElement('div');el.id='toast';document.body.appendChild(el);} el.textContent=msg; el.classList.add('show'); clearTimeout(window.__tt); window.__tt=setTimeout(()=>el.classList.remove('show'),2200); }
+
+/* =========================================================
+   Supabase 데이터 계층
+========================================================= */
+let STORAGE_OK=false, supa=null;
+function hasStorage(){ return !!supa; }
+function initSupabase(){
+  const c=window.APP_CONFIG||{};
+  const ok=c.SUPABASE_URL && !c.SUPABASE_URL.includes('붙여넣기') && c.SUPABASE_ANON_KEY && !c.SUPABASE_ANON_KEY.includes('붙여넣기');
+  if(!ok) return false;
+  if(typeof window.supabase==='undefined'||!window.supabase.createClient) return false;
+  try{ supa=window.supabase.createClient(c.SUPABASE_URL,c.SUPABASE_ANON_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}}); return true; }catch(e){ console.error(e); return false; }
+}
+function setConnBadge(ok){ const b=document.getElementById('conn-badge'); if(!b)return; b.innerHTML= ok?'<span class="conn-dot conn-ok"></span>공용 DB 연결됨':'<span class="conn-dot conn-bad"></span>DB 미연결'; }
+async function kvGet(k){ if(!supa)return null; const {data,error}=await supa.from('app_kv').select('value').eq('key',k).maybeSingle(); if(error)throw error; return data?data.value:null; }
+async function kvSet(k,v){ if(!supa)throw new Error('no db'); const {error}=await supa.from('app_kv').upsert({key:k,value:v},{onConflict:'key'}); if(error)throw error; return true; }
+async function kvDel(k){ if(!supa)return; const {error}=await supa.from('app_kv').delete().eq('key',k); if(error)throw error; }
+
+async function loadCategories(){ try{const v=await kvGet('categories');STORAGE_OK=true;return v;}catch(e){STORAGE_OK=false;return null;} }
+async function saveCategories(c){ try{await kvSet('categories',c);STORAGE_OK=true;return true;}catch(e){STORAGE_OK=false;return null;} }
+async function loadIndex(){ try{const v=await kvGet('sheet-index');STORAGE_OK=true;return Array.isArray(v)?v:[];}catch(e){STORAGE_OK=false;return [];} }
+async function saveIndex(i){ try{await kvSet('sheet-index',i);STORAGE_OK=true;return true;}catch(e){STORAGE_OK=false;return null;} }
+async function loadSeasons(){ try{const v=await kvGet('seasons');STORAGE_OK=true;return Array.isArray(v)?v:null;}catch(e){STORAGE_OK=false;return null;} }
+async function saveSeasons(list){ try{await kvSet('seasons',list);STORAGE_OK=true;return true;}catch(e){STORAGE_OK=false;return null;} }
+async function loadUsers(){ try{const v=await kvGet('users');STORAGE_OK=true;return Array.isArray(v)?v:null;}catch(e){STORAGE_OK=false;return null;} }
+async function saveUsers(list){ try{await kvSet('users',list);STORAGE_OK=true;return true;}catch(e){STORAGE_OK=false;return null;} }
+async function loadSheet(id){ try{const v=await kvGet('sheet:'+id);STORAGE_OK=true;return v;}catch(e){STORAGE_OK=false;return null;} }
+async function saveSheetData(s){ try{await kvSet('sheet:'+s.id,s);STORAGE_OK=true;return true;}catch(e){STORAGE_OK=false;return null;} }
+async function deleteSheetData(id){ try{await kvDel('sheet:'+id);}catch(e){} }
+
+/* =========================================================
+   데이터 모델
+========================================================= */
+function blankMaterialRow(){ return {section:'',vendor:'',spec:'',product:'',unitPrice:0,yardage:0,note:''}; }
+function blankCategory(){ const c={id:genId('cat'),name:''}; [...packFieldDefs,...logFieldDefs].forEach(([k])=>c[k]=0); return c; }
+function newBlankSheet(){
+  const defSeason = (state.seasons && state.seasons.length) ? state.seasons[state.seasons.length-1] : '26SS';
+  return {
+    id:genId('sheet'), styleNo:'', baseStyleNo:'', round:1, season:defSeason, itemName:'', saleName:'', manager:'',
+    createdAt:Date.now(), updatedAt:Date.now(), images:[], editLog:[], lastEditedBy:'', lastEditedAt:0,
+    sizes:['S','M','L','XL'], colorRows:[{color:'',qty:{S:0,M:0,L:0,XL:0}}],
+    patternCost:0, sampleCost:0,
+    fabricRows:[blankMaterialRow()], trimRows:[blankMaterialRow()],
+    labelRows:[{name:'메인라벨',unitPrice:98,qty:1},{name:'케어라벨',unitPrice:120,qty:1}],
+    categoryId:'', packingOverride:{}, logisticsOverride:{},
+    leaflet:57, returnExchange:50,
+    laborFee:0, finishing:0, etc:0, devCost:0, devCostManual:false,
+    expectedSalePrice:0, finalSalePrice:0,
+  };
+}
+
+/* =========================================================
+   계산
+========================================================= */
+function computeDevCost(s, qtyTotal){
+  // 엑셀 수식과 동일: 개발비 = (패턴비 + 샘플비) / 총 생산수량
+  if(s.devCostManual) return num(s.devCost);
+  if(qtyTotal<=0) return 0;
+  return (num(s.patternCost)+num(s.sampleCost))/qtyTotal;
+}
+function computeTotals(s){
+  const fabricTotal=s.fabricRows.reduce((a,r)=>a+num(r.unitPrice)*num(r.yardage),0);
+  const trimTotal=s.trimRows.reduce((a,r)=>a+num(r.unitPrice)*num(r.yardage),0);
+  const labelTotal=s.labelRows.reduce((a,r)=>a+num(r.unitPrice)*num(r.qty),0);
+  const pk=s.packingOverride||{};
+  const packingTotal=packFieldDefs.reduce((a,[k])=>a+num(pk[k]),0)+num(s.leaflet)+num(s.returnExchange);
+  const lg=s.logisticsOverride||{};
+  const logisticsTotal=logFieldDefs.reduce((a,[k])=>a+num(lg[k]),0);
+  const qtyTotal=s.colorRows.reduce((a,r)=>a+s.sizes.reduce((b,sz)=>b+num(r.qty[sz]),0),0);
+  const devCost=computeDevCost(s, qtyTotal);
+  const otherTotal=num(s.laborFee)+num(s.finishing)+num(s.etc)+devCost;
+  const grand=fabricTotal+trimTotal+labelTotal+packingTotal+logisticsTotal+otherTotal;
+  const vat=grand*1.1;
+  const multiple=vat>0?num(s.finalSalePrice)/vat:0;
+  return {fabricTotal,trimTotal,labelTotal,packingTotal,logisticsTotal,otherTotal,devCost,grand,vat,qtyTotal,multiple,totalProduction:vat*qtyTotal};
+}
+
+/* =========================================================
+   효율화: 기존 시트에서 자동완성 후보 수집
+   - 원단/부자재의 업체명·제품명·규격을 datalist로 제공
+========================================================= */
+let AUTOCOMPLETE={vendors:new Set(),products:new Set(),specs:new Set(),sections:new Set()};
+function harvestAutocomplete(sheets){
+  const A={vendors:new Set(),products:new Set(),specs:new Set(),sections:new Set()};
+  (sheets||[]).forEach(s=>{
+    [...(s.fabricRows||[]),...(s.trimRows||[])].forEach(r=>{
+      if(r.vendor)A.vendors.add(r.vendor);
+      if(r.product)A.products.add(r.product);
+      if(r.spec!=null&&r.spec!=='')A.specs.add(String(r.spec));
+      if(r.section)A.sections.add(r.section);
+    });
+  });
+  AUTOCOMPLETE=A;
+}
+function datalistHTML(){
+  const opt=(set)=>[...set].map(v=>`<option value="${esc(v)}">`).join('');
+  return `<datalist id="dl-vendors">${opt(AUTOCOMPLETE.vendors)}</datalist>
+          <datalist id="dl-products">${opt(AUTOCOMPLETE.products)}</datalist>
+          <datalist id="dl-specs">${opt(AUTOCOMPLETE.specs)}</datalist>
+          <datalist id="dl-sections">${opt(AUTOCOMPLETE.sections)}</datalist>`;
+}
+
+/* =========================================================
+   렌더 공통
+========================================================= */
+function render(){
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active',b.dataset.tab===state.tab));
+  if(state.tab==='editor') mainEl.innerHTML=renderEditor();
+  else if(state.tab==='search'){ mainEl.innerHTML=renderSearchShell(); renderSearchResults(); }
+  else if(state.tab==='categories') mainEl.innerHTML=renderCategories();
+  refreshAllComputed();
+  setupSealDrag();
+}
+let SEAL_POS=null, SEAL_DRAG=null, SEAL_LISTENERS=false;
+function setupSealDrag(){
+  const seal=document.getElementById('cost-seal');
+  const handle=document.getElementById('seal-handle');
+  if(!seal||!handle) return;
+  if(SEAL_POS){ seal.style.left=SEAL_POS.left+'px'; seal.style.top=SEAL_POS.top+'px'; seal.style.right='auto'; seal.style.bottom='auto'; }
+  handle.onmousedown=(e)=>{
+    const r=seal.getBoundingClientRect();
+    SEAL_DRAG={dx:e.clientX-r.left, dy:e.clientY-r.top};
+    seal.style.right='auto'; seal.style.bottom='auto';
+    e.preventDefault();
+  };
+  if(!SEAL_LISTENERS){
+    SEAL_LISTENERS=true;
+    window.addEventListener('mousemove',(e)=>{
+      const seal=document.getElementById('cost-seal');
+      if(!SEAL_DRAG||!seal) return;
+      let left=e.clientX-SEAL_DRAG.dx, top=e.clientY-SEAL_DRAG.dy;
+      left=Math.max(4,Math.min(window.innerWidth-seal.offsetWidth-4,left));
+      top=Math.max(4,Math.min(window.innerHeight-seal.offsetHeight-4,top));
+      seal.style.left=left+'px'; seal.style.top=top+'px';
+      SEAL_POS={left,top};
+    });
+    window.addEventListener('mouseup',()=>{ SEAL_DRAG=null; });
+  }
+}
+function renderTab(){ render(); }
+
+function refreshAllComputed(){
+  const s=state.current; if(!s||state.tab!=='editor')return;
+  s.fabricRows.forEach((r,i)=>setText('fabricRows-amt-'+i,won(num(r.unitPrice)*num(r.yardage))));
+  s.trimRows.forEach((r,i)=>setText('trimRows-amt-'+i,won(num(r.unitPrice)*num(r.yardage))));
+  s.labelRows.forEach((r,i)=>setText('labelRows-amt-'+i,won(num(r.unitPrice)*num(r.qty))));
+  s.colorRows.forEach((r,i)=>setText('csz-rowtotal-'+i,s.sizes.reduce((a,sz)=>a+num(r.qty[sz]),0).toLocaleString('ko-KR')));
+  s.sizes.forEach(sz=>setText('csz-coltotal-'+sz,s.colorRows.reduce((a,r)=>a+num(r.qty[sz]),0).toLocaleString('ko-KR')));
+  const t=computeTotals(s);
+  ['fabric','trim','label','packing','logistics','other'].forEach(k=>setText('subtotal-'+k,won(t[k+'Total'])));
+  setText('sum-fabric',won(t.fabricTotal));setText('sum-trim',won(t.trimTotal));setText('sum-label',won(t.labelTotal));
+  setText('sum-packing',won(t.packingTotal));setText('sum-logistics',won(t.logisticsTotal));setText('sum-other',won(t.otherTotal));
+  // 개발비 자동계산 모드일 때 입력칸에 계산값 실시간 표시
+  const devInput=document.getElementById('devcost-input');
+  if(devInput && !s.devCostManual){ devInput.value=Math.round(t.devCost); }
+  setText('sum-grand',won(t.grand));setText('sum-vat',won(t.vat));setText('sum-multiple',t.multiple.toFixed(2));
+  setText('csz-grandtotal',t.qtyTotal.toLocaleString('ko-KR'));
+  setText('insight-qty',t.qtyTotal.toLocaleString('ko-KR'));
+  setText('insight-totalproduction',won(t.totalProduction));
+  setText('seal-vat',won(t.vat));setText('seal-multiple',t.multiple.toFixed(2));setText('seal-final',won(num(s.finalSalePrice)));
+}
+
+/* =========================================================
+   렌더 — 작성
+========================================================= */
+function renderMaterialTable(bindKey,subtotalId,rows){
+  return `<table>
+    <thead><tr><th>구분</th><th>업체명</th><th>규격</th><th>제품명</th><th>단가</th><th>요척</th><th>금액</th><th>비고</th><th></th></tr></thead>
+    <tbody>${rows.map((r,i)=>`<tr>
+      <td><input list="dl-sections" data-bind="${bindKey}.${i}.section" value="${esc(r.section)}"></td>
+      <td><input list="dl-vendors" data-bind="${bindKey}.${i}.vendor" value="${esc(r.vendor)}"></td>
+      <td><input list="dl-specs" data-bind="${bindKey}.${i}.spec" value="${esc(r.spec)}"></td>
+      <td><input list="dl-products" data-bind="${bindKey}.${i}.product" value="${esc(r.product)}"></td>
+      <td><input type="number" data-type="number" data-bind="${bindKey}.${i}.unitPrice" value="${r.unitPrice||0}"></td>
+      <td><input type="number" step="0.01" data-type="number" data-bind="${bindKey}.${i}.yardage" value="${r.yardage||0}"></td>
+      <td class="readout" id="${bindKey}-amt-${i}">0</td>
+      <td><input data-bind="${bindKey}.${i}.note" value="${esc(r.note)}"></td>
+      <td><button class="mini-del" data-action="del-${bindKey}" data-idx="${i}">삭제</button></td>
+    </tr>`).join('')}</tbody>
+    <tfoot><tr><td colspan="6">소계</td><td class="readout strong" id="${subtotalId}">0</td><td colspan="2"></td></tr></tfoot>
+  </table>
+  <button class="btn small" data-action="add-${bindKey}" style="margin-top:10px;">+ 행 추가</button>`;
+}
+
+function renderEditor(){
+  const s=state.current;
+  s.packingOverride=s.packingOverride||{}; s.logisticsOverride=s.logisticsOverride||{};
+  const isSaved=state.index.some(x=>x.id===s.id);
+
+  return `${datalistHTML()}
+  <div class="actions-bar no-print">
+    <button class="btn primary" data-action="save-sheet">저장</button>
+    <button class="btn" data-action="new-sheet">새 작성</button>
+    <button class="btn" data-action="duplicate-sheet">현재 복제</button>
+    <button class="btn" data-action="add-round">＋ 리오더(새 차수)</button>
+    <button class="btn" data-action="print-sheet">인쇄 / PDF</button>
+    ${isSaved?`<button class="btn danger" data-action="delete-sheet">삭제</button>`:''}
+    <div class="quick-load">
+      <button class="btn" data-action="toggle-loadpanel" id="loadpanel-btn">📂 상품 불러오기</button>
+      <div id="load-panel" class="load-panel">
+        <div class="load-panel-filters">
+          <select id="lp-season"><option value="">전체 시즌</option></select>
+          <select id="lp-category"><option value="">전체 구분</option></select>
+          <span class="lp-count" id="lp-count"></span>
+        </div>
+        <div id="lp-list" class="lp-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="editor-grid">
+    <div class="left-col">
+      <div class="card">
+        <div class="eyebrow">Style</div>
+        <label>시즌
+          <select data-bind="season">
+            ${(state.seasons||['26SS']).map(sea=>`<option value="${esc(sea)}" ${sea===s.season?'selected':''}>${esc(sea)}</option>`).join('')}
+          </select>
+        </label>
+        <label>Style No.<input data-bind="styleNo" value="${esc(s.styleNo)}" placeholder="예: L26SPJP01"></label>
+        <label>품명 (ITEM)<input data-bind="itemName" value="${esc(s.itemName)}" placeholder="예: 하이넥 봄버 JP"></label>
+        <label>실제 판매 상품명 <span style="color:var(--muted-txt);font-size:10px;">(쇼핑몰 노출명)</span>
+          <input data-bind="saleName" value="${esc(s.saleName||'')}" placeholder="예: [르쏭드비] 하이넥 크롭 봄버 자켓">
+        </label>
+        <label>차수 <span style="color:var(--muted-txt);font-size:10px;">(1=초도, 2=리오더…)</span>
+          <input type="number" min="1" data-type="number" data-bind="round" value="${s.round||1}">
+        </label>
+        <label>담당자<input data-bind="manager" value="${esc(s.manager)}" placeholder="담당자명"></label>
+        ${renderEditHistory(s)}
+      </div>
+      <div class="card">
+        <div class="eyebrow">참고 이미지 <span class="aux">최대 4장</span></div>
+        <div class="dropzone" id="dropzone">클릭 또는 드래그해서 이미지 추가</div>
+        <input type="file" id="file-input" accept="image/*" multiple style="display:none">
+        <div class="thumb-row">${s.images.map((img,i)=>`<div class="thumb"><img src="${img}"><button data-action="remove-image" data-idx="${i}">×</button></div>`).join('')}</div>
+      </div>
+      <div class="card">
+        <div class="eyebrow">공임 <span class="aux">개발성 비용</span></div>
+        <label>패턴비<input type="number" data-type="number" data-bind="patternCost" value="${s.patternCost||0}"></label>
+        <label>샘플비<input type="number" data-type="number" data-bind="sampleCost" value="${s.sampleCost||0}"></label>
+      </div>
+      <div class="card insight-card">
+        <div class="eyebrow">생산 인사이트</div>
+        <div class="ins-row"><span>총 생산수량</span><b><span id="insight-qty">0</span> 벌</b></div>
+        <div class="ins-row"><span>총 생산원가 (VAT×수량)</span><b id="insight-totalproduction">0</b></div>
+      </div>
+    </div>
+
+    <div class="right-col">
+      <div class="card">
+        <div class="eyebrow">Color / Size</div>
+        <table class="csz-table">
+          <thead><tr><th>컬러</th>${s.sizes.map(sz=>`<th>${esc(sz)} <button class="mini-x" data-action="del-size" data-size="${esc(sz)}">×</button></th>`).join('')}<th>합계</th><th></th></tr></thead>
+          <tbody>${s.colorRows.map((r,i)=>`<tr>
+            <td><input data-bind="colorRows.${i}.color" value="${esc(r.color)}" placeholder="컬러"></td>
+            ${s.sizes.map(sz=>`<td><input type="number" data-type="number" data-bind="colorRows.${i}.qty.${sz}" value="${num(r.qty[sz])}"></td>`).join('')}
+            <td class="readout" id="csz-rowtotal-${i}">0</td>
+            <td><button class="mini-del" data-action="del-color" data-idx="${i}">삭제</button></td>
+          </tr>`).join('')}</tbody>
+          <tfoot><tr><td>TOTAL</td>${s.sizes.map(sz=>`<td class="readout" id="csz-coltotal-${esc(sz)}">0</td>`).join('')}<td class="readout strong" id="csz-grandtotal">0</td><td></td></tr></tfoot>
+        </table>
+        <div class="row-actions">
+          <button class="btn small" data-action="add-color">+ 컬러 추가</button>
+          <div class="inline-add-size"><input id="new-size-name" placeholder="사이즈 (예: 2XL)"><button class="btn small" data-action="add-size">+ 사이즈</button></div>
+        </div>
+      </div>
+
+      <div class="card"><div class="eyebrow">원단</div>${renderMaterialTable('fabricRows','subtotal-fabric',s.fabricRows)}</div>
+      <div class="card"><div class="eyebrow">부자재</div>${renderMaterialTable('trimRows','subtotal-trim',s.trimRows)}</div>
+
+      <div class="card">
+        <div class="eyebrow">라벨 / TAG</div>
+        <table>
+          <thead><tr><th>명칭</th><th>단가</th><th>수량</th><th>금액</th><th></th></tr></thead>
+          <tbody>${s.labelRows.map((r,i)=>`<tr>
+            <td><input data-bind="labelRows.${i}.name" value="${esc(r.name)}"></td>
+            <td><input type="number" data-type="number" data-bind="labelRows.${i}.unitPrice" value="${r.unitPrice||0}"></td>
+            <td><input type="number" data-type="number" data-bind="labelRows.${i}.qty" value="${r.qty||0}"></td>
+            <td class="readout" id="labelRows-amt-${i}">0</td>
+            <td><button class="mini-del" data-action="del-labelRows" data-idx="${i}">삭제</button></td>
+          </tr>`).join('')}</tbody>
+          <tfoot><tr><td colspan="3">소계</td><td class="readout strong" id="subtotal-label">0</td><td></td></tr></tfoot>
+        </table>
+        <button class="btn small" data-action="add-labelRows" style="margin-top:10px;">+ 행 추가</button>
+      </div>
+
+      <div class="card">
+        <div class="eyebrow">Packing · 포장자재 <span class="aux">카테고리 선택 시 자동입력</span></div>
+        <label>의류구분
+          <select id="select-category">
+            <option value="">직접 입력</option>
+            ${state.categories.map(c=>`<option value="${c.id}" ${c.id===s.categoryId?'selected':''}>${esc(c.name)}</option>`).join('')}
+          </select>
+        </label>
+        <div class="pack-grid">
+          ${packFieldDefs.map(([k,l])=>`<label class="pack-field">${l}<input type="number" data-type="number" data-bind="packingOverride.${k}" value="${num(s.packingOverride[k])}"></label>`).join('')}
+          <label class="pack-field">리플렛<input type="number" data-type="number" data-bind="leaflet" value="${s.leaflet||0}"></label>
+          <label class="pack-field">교환반품<input type="number" data-type="number" data-bind="returnExchange" value="${s.returnExchange||0}"></label>
+        </div>
+        <div class="subtotal-line">포장자재 합계 <span class="readout strong" id="subtotal-packing">0</span></div>
+      </div>
+
+      <div class="card">
+        <div class="eyebrow">물류비 <span class="aux">카테고리 선택 시 자동입력</span></div>
+        <div class="pack-grid">${logFieldDefs.map(([k,l])=>`<label class="pack-field">${l}<input type="number" data-type="number" data-bind="logisticsOverride.${k}" value="${num(s.logisticsOverride[k])}"></label>`).join('')}</div>
+        <div class="subtotal-line">물류비 합계 <span class="readout strong" id="subtotal-logistics">0</span></div>
+      </div>
+
+      <div class="card">
+        <div class="eyebrow">기타 비용</div>
+        <div class="pack-grid">
+          <label class="pack-field">임가공비<input type="number" data-type="number" data-bind="laborFee" value="${s.laborFee||0}"></label>
+          <label class="pack-field">시야게<input type="number" data-type="number" data-bind="finishing" value="${s.finishing||0}"></label>
+          <label class="pack-field">기타<input type="number" data-type="number" data-bind="etc" value="${s.etc||0}"></label>
+          <label class="pack-field">개발비 ${s.devCostManual?'':'<span style="color:var(--sage-deep);font-size:9px;">(자동)</span>'}
+            <input type="number" data-type="number" data-bind="devCost" id="devcost-input" value="${s.devCostManual?(s.devCost||0):0}" ${s.devCostManual?'':'readonly style="background:var(--surface-2);color:var(--muted-txt);"'}>
+          </label>
+        </div>
+        <label style="display:flex;align-items:center;gap:7px;margin-top:12px;font-size:11.5px;color:var(--ink-soft);cursor:pointer;">
+          <input type="checkbox" id="devcost-manual-toggle" ${s.devCostManual?'checked':''} style="width:auto;margin:0;">
+          개발비 직접 입력 (체크 해제 시 = (패턴비＋샘플비) ÷ 총수량 자동계산)
+        </label>
+        <div class="subtotal-line">기타비용 합계 <span class="readout strong" id="subtotal-other">0</span></div>
+      </div>
+
+      <div class="card summary-card">
+        <div class="eyebrow">원가 요약</div>
+        <table>
+          <tr><td>원단 합계</td><td class="readout" id="sum-fabric">0</td></tr>
+          <tr><td>부자재 합계</td><td class="readout" id="sum-trim">0</td></tr>
+          <tr><td>라벨/TAG 합계</td><td class="readout" id="sum-label">0</td></tr>
+          <tr><td>포장자재 합계</td><td class="readout" id="sum-packing">0</td></tr>
+          <tr><td>물류비 합계</td><td class="readout" id="sum-logistics">0</td></tr>
+          <tr><td>기타비용 합계</td><td class="readout" id="sum-other">0</td></tr>
+          <tr class="grand"><td>총 합계</td><td id="sum-grand">0</td></tr>
+          <tr><td>VAT 포함 (×1.1)</td><td class="readout strong" id="sum-vat">0</td></tr>
+          <tr><td>예상판매가 (참고)</td><td><input type="number" data-type="number" data-bind="expectedSalePrice" value="${s.expectedSalePrice||0}"></td></tr>
+          <tr><td>최종판매가</td><td><input type="number" data-type="number" data-bind="finalSalePrice" value="${s.finalSalePrice||0}"></td></tr>
+          <tr class="mult-row"><td>배수</td><td class="readout" id="sum-multiple">0.00</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="cost-seal no-print" id="cost-seal">
+    <div class="seal-handle" id="seal-handle"><span>원가 요약</span><span class="dots">⋮⋮</span></div>
+    <div class="seal-label">원가 (VAT 포함)</div>
+    <div class="seal-value"><span id="seal-vat">0</span><span class="cur">원</span></div>
+    <div class="seal-sub">최종판매가<span class="mono" id="seal-final">0</span></div>
+    <div class="seal-sub mult"><span class="lbl">배수</span><span class="mono" id="seal-multiple">0.00</span></div>
+  </div>`;
+}
+
+/* =========================================================
+   렌더 — 목록/검색
+========================================================= */
+function avgGrand(){ if(!state.index.length)return 0; return state.index.reduce((a,x)=>a+(x.grand||0),0)/state.index.length; }
+function thisMonthCount(){ const n=new Date(); return state.index.filter(x=>{const d=new Date(x.updatedAt);return d.getMonth()===n.getMonth()&&d.getFullYear()===n.getFullYear();}).length; }
+function renderSearchShell(){
+  const cats=[...new Set(state.index.map(x=>x.categoryName).filter(Boolean))];
+  const seasons=state.seasons||['26SS'];
+  const seasonTabs=`<div class="season-tabs">
+    <button class="season-tab ${!state.seasonFilter?'active':''}" data-action="season-filter" data-season="">전체 시즌</button>
+    ${seasons.map(sea=>`<span class="season-tab-wrap"><button class="season-tab ${state.seasonFilter===sea?'active':''}" data-action="season-filter" data-season="${esc(sea)}">${esc(sea)}</button><button class="season-del" data-action="del-season" data-season="${esc(sea)}" title="${esc(sea)} 시즌 삭제">×</button></span>`).join('')}
+    <button class="season-add" data-action="add-season" title="시즌 추가">＋ 시즌</button>
+    <button class="season-add" data-action="manage-users" title="작업자 관리" style="margin-left:auto;">◍ 작업자 관리</button>
+  </div>`;
+  // 현재 필터에 맞는 통계
+  const scoped = state.seasonFilter ? state.index.filter(x=>(x.season||'26SS')===state.seasonFilter) : state.index;
+  const avg = scoped.length ? scoped.reduce((a,x)=>a+(x.grand||0),0)/scoped.length : 0;
+  return `
+  ${seasonTabs}
+  <div class="search-toolbar">
+    <input id="search-query" class="search-input" placeholder="스타일번호 · 품명 · 카테고리 검색">
+    <select id="search-category" style="width:auto;"><option value="">전체 카테고리</option>${cats.map(c=>`<option>${esc(c)}</option>`).join('')}</select>
+    <button class="btn" data-action="export-csv">CSV 내보내기</button>
+  </div>
+  <div class="stat-row">
+    <div class="stat-card"><div class="stat-num">${scoped.length}</div><div class="stat-label">${state.seasonFilter?esc(state.seasonFilter)+' 품목':'등록 품목'}</div></div>
+    <div class="stat-card"><div class="stat-num">${won(avg)}</div><div class="stat-label">평균 원가</div></div>
+    <div class="stat-card"><div class="stat-num">${seasons.length}</div><div class="stat-label">등록 시즌</div></div>
+  </div>
+  <div id="search-results-list"></div>`;
+}
+function sortArrow(key){
+  if(state.sortKey!==key) return '<span class="sort-arr">↕</span>';
+  return state.sortDir==='asc'?'<span class="sort-arr on">↑</span>':'<span class="sort-arr on">↓</span>';
+}
+function renderSearchResults(){
+  const q=(document.getElementById('search-query')?.value||'').toLowerCase();
+  const cat=document.getElementById('search-category')?.value||'';
+  const list=state.index.filter(x=>{
+    const mq=!q||(x.styleNo||'').toLowerCase().includes(q)||(x.itemName||'').toLowerCase().includes(q)||(x.categoryName||'').toLowerCase().includes(q);
+    const ms=!state.seasonFilter||(x.season||'26SS')===state.seasonFilter;
+    return mq&&ms&&(!cat||x.categoryName===cat);
+  });
+  const c=document.getElementById('search-results-list'); if(!c)return;
+  if(!list.length){ c.innerHTML='<div class="empty-state">검색 결과가 없습니다.</div>'; return; }
+
+  // baseStyleNo(없으면 styleNo)로 묶기
+  const groups={};
+  list.forEach(x=>{
+    const key=x.baseStyleNo||x.styleNo||x.id;
+    (groups[key]=groups[key]||[]).push(x);
+  });
+  // 그룹별 대표값 계산 후 정렬
+  function groupVal(key, sortKey){
+    const rounds=groups[key];
+    const head=rounds.slice().sort((a,b)=>(a.round||1)-(b.round||1)).slice(-1)[0];
+    const totalQty=rounds.reduce((a,x)=>a+num(x.qtyTotal),0);
+    let avgCost; const tq=totalQty;
+    if(tq>0){ avgCost=rounds.reduce((a,x)=>a+num(x.vat)*num(x.qtyTotal),0)/tq; } else { avgCost=rounds.reduce((a,x)=>a+num(x.vat),0)/rounds.length; }
+    switch(sortKey){
+      case 'styleNo': return (head.styleNo||'').toLowerCase();
+      case 'itemName': return (head.itemName||'').toLowerCase();
+      case 'saleName': return (head.saleName||'').toLowerCase();
+      case 'categoryName': return (head.categoryName||'').toLowerCase();
+      case 'vat': return avgCost;
+      case 'qtyTotal': return totalQty;
+      case 'multiple': return num(head.multiple);
+      case 'updatedAt': default: return Math.max(...rounds.map(x=>x.updatedAt||0));
+    }
+  }
+  const sk=state.sortKey||'updatedAt', sd=state.sortDir==='asc'?1:-1;
+  const groupKeys=Object.keys(groups).sort((a,b)=>{
+    const va=groupVal(a,sk), vb=groupVal(b,sk);
+    if(typeof va==='string'||typeof vb==='string'){ return String(va).localeCompare(String(vb))*sd; }
+    return (va-vb)*sd;
+  });
+
+  const rowsHTML=groupKeys.map(key=>{
+    const rounds=groups[key].slice().sort((a,b)=>(a.round||1)-(b.round||1));
+    const multi=rounds.length>1;
+    const totalQty=rounds.reduce((a,x)=>a+num(x.qtyTotal),0);
+    // 가중평균 실현원가 = Σ(원가×수량) / Σ수량  (수량 없으면 단순평균)
+    let avgCost;
+    if(totalQty>0){ avgCost=rounds.reduce((a,x)=>a+num(x.vat)*num(x.qtyTotal),0)/totalQty; }
+    else { avgCost=rounds.reduce((a,x)=>a+num(x.vat),0)/rounds.length; }
+    const head=rounds[rounds.length-1]; // 대표(최신 차수)
+    const thumb=rounds.map(r=>r.thumb).find(Boolean);
+
+    const groupRow=`<tr class="grp-row has-rounds" data-action="toggle-group" data-key="${esc(key)}">
+      <td>${thumb?`<img class="row-thumb" src="${thumb}">`:'<div class="row-thumb placeholder"></div>'}</td>
+      <td><span class="list-style-no">${esc(head.styleNo)||'-'}</span> <span class="round-badge">↻ ${rounds.length}차수</span></td>
+      <td><span class="list-item-name">${esc(head.itemName)||'-'}</span> ${head.season?`<span class="season-chip">${esc(head.season)}</span>`:''} <span class="expand-hint" data-key="${esc(key)}">▸ 펼치기</span></td>
+      <td><span class="list-sale-name">${esc(head.saleName)||'<span style=\"color:var(--muted-txt)\">-</span>'}</span></td>
+      <td class="readout">${won(avgCost)}<span class="sub-note">평균</span></td>
+      <td class="readout">${totalQty.toLocaleString('ko-KR')}<span class="sub-note">누적</span></td>
+      <td class="readout">${head.multiple?head.multiple.toFixed(2):'-'}</td>
+      <td class="readout" style="color:var(--muted-txt)">${new Date(head.updatedAt).toLocaleDateString('ko-KR')}</td>
+    </tr>`;
+
+    // 차수 상세행 (여러 차수일 때만, 기본 접힘)
+    const childRows= multi ? rounds.map(r=>`<tr class="child-row hidden" data-group="${esc(key)}" data-action="load-sheet" data-id="${r.id}">
+      <td></td>
+      <td><span class="round-tag">${r.round||1}차</span></td>
+      <td style="color:var(--muted-txt)">${(r.round===1)?'초도':(r.round===2?'리오더':'재생산')}</td>
+      <td style="color:var(--muted-txt);font-size:11px;">${esc(r.saleName||'')}</td>
+      <td class="readout">${won(r.vat)}</td>
+      <td class="readout">${num(r.qtyTotal).toLocaleString('ko-KR')}</td>
+      <td class="readout">${r.multiple?r.multiple.toFixed(2):'-'}</td>
+      <td class="readout" style="color:var(--muted-txt)">${new Date(r.updatedAt).toLocaleDateString('ko-KR')}</td>
+    </tr>`).join('') : '';
+
+    // 단일 차수면 그룹행 자체가 바로 열리도록 load-sheet 처리
+    const singleOpen = !multi ? `` : '';
+    if(!multi){
+      return `<tr class="grp-row" data-action="load-sheet" data-id="${head.id}">
+        <td>${thumb?`<img class="row-thumb" src="${thumb}">`:'<div class="row-thumb placeholder"></div>'}</td>
+        <td><span class="list-style-no">${esc(head.styleNo)||'-'}</span></td>
+        <td><span class="list-item-name">${esc(head.itemName)||'-'}</span> ${head.season?`<span class="season-chip">${esc(head.season)}</span>`:''}</td>
+        <td><span class="list-sale-name">${esc(head.saleName)||'<span style=\"color:var(--muted-txt)\">-</span>'}</span></td>
+        <td class="readout">${won(head.vat)}</td>
+        <td class="readout">${num(head.qtyTotal).toLocaleString('ko-KR')}</td>
+        <td class="readout">${head.multiple?head.multiple.toFixed(2):'-'}</td>
+        <td class="readout" style="color:var(--muted-txt)">${new Date(head.updatedAt).toLocaleDateString('ko-KR')}</td>
+      </tr>`;
+    }
+    return groupRow+childRows;
+  }).join('');
+
+  c.innerHTML=`<div class="table-scroll"><table class="list-table">
+    <thead><tr><th></th>
+      <th class="sortable" data-action="sort" data-key="styleNo">Style No.${sortArrow('styleNo')}</th>
+      <th class="sortable" data-action="sort" data-key="itemName">품명${sortArrow('itemName')}</th>
+      <th class="sortable" data-action="sort" data-key="saleName">판매상품명${sortArrow('saleName')}</th>
+      <th class="sortable num" data-action="sort" data-key="vat">원가(VAT)${sortArrow('vat')}</th>
+      <th class="sortable num" data-action="sort" data-key="qtyTotal">수량${sortArrow('qtyTotal')}</th>
+      <th class="sortable num" data-action="sort" data-key="multiple">배수${sortArrow('multiple')}</th>
+      <th class="sortable num" data-action="sort" data-key="updatedAt">수정일${sortArrow('updatedAt')}</th>
+    </tr></thead>
+    <tbody>${rowsHTML}</tbody>
+  </table></div>
+  <p class="hint">여러 차수(초도·리오더)가 있는 스타일은 <b>N차수</b> 배지로 묶여 표시됩니다. 행을 클릭하면 차수별로 펼쳐지고, 원가는 <b>수량 가중평균 실현원가</b>, 수량은 <b>누적 생산수량</b>입니다.</p>`;
+}
+
+/* =========================================================
+   렌더 — 카테고리 DB
+========================================================= */
+function renderCategories(){
+  return `
+  <div class="cat-toolbar">
+    <button class="btn primary" data-action="save-categories">변경사항 저장</button>
+    <button class="btn" data-action="add-category">+ 카테고리 추가</button>
+    <button class="btn" data-action="reset-categories">엑셀 기본값으로 초기화</button>
+    <input id="cat-search" class="search-input" style="max-width:240px;" placeholder="카테고리 검색">
+  </div>
+  <div class="backup-bar">
+    <div class="backup-label">데이터 백업 · 복원</div>
+    <button class="btn" data-action="export-backup">⭳ 전체 백업 (JSON 다운로드)</button>
+    <button class="btn" data-action="import-backup">⭱ 백업 복원 (파일 선택)</button>
+    <input type="file" id="import-file" accept="application/json,.json" style="display:none;">
+    <span class="backup-hint">주기적으로 백업 파일을 받아 안전한 곳(구글 드라이브 등)에 보관하세요.</span>
+  </div>
+  <div class="table-scroll"><table class="cat-table">
+    <thead><tr><th>구분</th>${[...packFieldDefs,...logFieldDefs].map(([k,l])=>`<th>${l}</th>`).join('')}<th></th></tr></thead>
+    <tbody id="cat-tbody">${state.categories.map((c,i)=>`<tr data-cat-name="${esc(c.name).toLowerCase()}">
+      <td><input data-cat-bind="${i}.name" value="${esc(c.name)}"></td>
+      ${[...packFieldDefs,...logFieldDefs].map(([k])=>`<td><input type="number" data-cat-bind="${i}.${k}" value="${num(c[k])}"></td>`).join('')}
+      <td><button class="mini-del" data-action="del-category" data-idx="${i}">삭제</button></td>
+    </tr>`).join('')}</tbody>
+  </table></div>
+  <p class="hint">이 표의 단가는 작성 화면에서 '의류구분'을 선택하면 포장자재·물류비에 자동으로 채워집니다.<br>값을 바꾼 뒤에는 반드시 <b>변경사항 저장</b>을 눌러야 반영됩니다. 이 데이터는 모든 직원에게 공유됩니다.</p>`;
+}
+
+/* =========================================================
+   프린트 렌더 (업로드 양식 재현)
+========================================================= */
+function renderPrintSheet(s){
+  const t=computeTotals(s);
+  const cat=state.categories.find(c=>c.id===s.categoryId);
+  const money=(n)=>won(n);
+  const colorTable=`<table class="ps"><thead><tr><th class="l">COLOR/SIZE</th>${s.sizes.map(sz=>`<th>${esc(sz)}</th>`).join('')}<th>합계</th></tr></thead>
+    <tbody>${s.colorRows.map(r=>`<tr><td class="l">${esc(r.color)||'-'}</td>${s.sizes.map(sz=>`<td class="c">${num(r.qty[sz])||''}</td>`).join('')}<td>${s.sizes.reduce((a,sz)=>a+num(r.qty[sz]),0)}</td></tr>`).join('')}
+    <tr class="tot"><td class="l">TOTAL</td><td class="c" colspan="${s.sizes.length}"></td><td>${t.qtyTotal}</td></tr></tbody></table>`;
+
+  const matTable=(title,rows,subtotal)=>`<table class="ps"><thead><tr><th class="l" colspan="2">${title}</th><th>규격</th><th class="l">제품명</th><th>단가</th><th>요척</th><th>금액</th></tr></thead>
+    <tbody>${rows.filter(r=>r.section||r.vendor||r.product||num(r.unitPrice)).map(r=>`<tr><td class="l">${esc(r.section)}</td><td class="l">${esc(r.vendor)}</td><td class="c">${esc(r.spec)}</td><td class="l">${esc(r.product)}</td><td>${money(r.unitPrice)}</td><td class="c">${r.yardage||''}</td><td>${money(num(r.unitPrice)*num(r.yardage))}</td></tr>`).join('')}
+    <tr class="tot"><td class="l" colspan="6">소계</td><td>${money(subtotal)}</td></tr></tbody></table>`;
+
+  const labelTable=`<table class="ps"><thead><tr><th class="l" colspan="3">라벨 / TAG</th><th>단가</th><th>수량</th><th>금액</th></tr></thead>
+    <tbody>${s.labelRows.filter(r=>r.name||num(r.unitPrice)).map(r=>`<tr><td class="l" colspan="3">${esc(r.name)}</td><td>${money(r.unitPrice)}</td><td class="c">${r.qty||''}</td><td>${money(num(r.unitPrice)*num(r.qty))}</td></tr>`).join('')}
+    <tr class="tot"><td class="l" colspan="5">소계</td><td>${money(t.labelTotal)}</td></tr></tbody></table>`;
+
+  const pk=s.packingOverride||{};
+  const packRows=[...packFieldDefs.map(([k,l])=>[l,num(pk[k])]),['리플렛',num(s.leaflet)],['교환반품',num(s.returnExchange)]];
+  const packTable=`<table class="ps"><thead><tr><th class="l" colspan="2">PACKING${cat?' · '+esc(cat.name):''}</th><th>단가</th><th>수량</th><th>금액</th></tr></thead>
+    <tbody>${packRows.map(([l,v])=>`<tr><td class="l" colspan="2">${l}</td><td>${money(v)}</td><td class="c">1</td><td>${money(v)}</td></tr>`).join('')}
+    <tr class="tot"><td class="l" colspan="4">원부자재 합계</td><td>${money(t.packingTotal)}</td></tr></tbody></table>`;
+
+  const lg=s.logisticsOverride||{};
+  const logRows=logFieldDefs.map(([k,l])=>[l,num(lg[k])]);
+  const logTable=`<table class="ps"><thead><tr><th class="l" colspan="2">물류비</th><th>단가</th><th>수량</th><th>금액</th></tr></thead>
+    <tbody>${logRows.map(([l,v])=>`<tr><td class="l" colspan="2">${l}</td><td>${money(v)}</td><td class="c">1</td><td>${money(v)}</td></tr>`).join('')}
+    <tr class="tot"><td class="l" colspan="4">물류비 합계</td><td>${money(t.logisticsTotal)}</td></tr></tbody></table>`;
+
+  const etcTable=`<table class="ps"><tbody>
+    <tr><td class="l sec">공임 · 패턴비</td><td>${money(s.patternCost)}</td><td class="l sec">임가공비</td><td>${money(s.laborFee)}</td></tr>
+    <tr><td class="l sec">공임 · 샘플비</td><td>${money(s.sampleCost)}</td><td class="l sec">시야게</td><td>${money(s.finishing)}</td></tr>
+    <tr><td class="l sec">개발비 <small style="font-weight:400;color:#666;">((패턴＋샘플)/수량)</small></td><td>${money(t.devCost)}</td><td class="l sec">기타</td><td>${money(s.etc)}</td></tr>
+    <tr class="tot"><td class="l">총 합계</td><td>${money(t.grand)}</td><td class="l">VAT(×1.1)</td><td>${money(t.vat)}</td></tr>
+  </tbody></table>`;
+
+  const imgs=(s.images||[]).slice(0,2);
+  const imgHTML= imgs.length? `<div class="ps-imgrow">${imgs.map(im=>`<img src="${im}">`).join('')}</div>`:'';
+
+  return `<div class="print-sheet">
+    <div class="ps-head">
+      <div class="ps-title">원가계산서</div>
+      <div class="ps-brand">Leçon de Vie<br>르쏭드비</div>
+    </div>
+    <div class="ps-meta">
+      <div class="k">Style No.</div><div class="v">${esc(s.styleNo)}${(s.round&&s.round>1)?' <b>('+s.round+'차)</b>':''}</div>
+      <div class="k">시즌</div><div class="v">${esc(s.season)||'-'}</div>
+      <div class="k">ITEM</div><div class="v">${esc(s.itemName)}</div>
+      <div class="k">판매상품명</div><div class="v">${esc(s.saleName||'-')}</div>
+      <div class="k">담당자</div><div class="v">${esc(s.manager)}</div>
+      <div class="k">의류구분</div><div class="v">${cat?esc(cat.name):'-'}</div>
+      <div class="k">차수</div><div class="v">${s.round||1}차${(s.round&&s.round>1)?' (리오더)':' (초도)'}</div>
+    </div>
+    ${imgHTML}
+    ${colorTable}
+    <div class="ps-layout">
+      <div>${matTable('원단',s.fabricRows,t.fabricTotal)}${matTable('부자재',s.trimRows,t.trimTotal)}${labelTable}</div>
+      <div>${packTable}${logTable}${etcTable}</div>
+    </div>
+    <div class="ps-final">
+      <span class="lbl">최종판매가</span>
+      <span class="amt">${money(s.finalSalePrice)} 원</span>
+      <span class="mult"><small>배수</small>${t.multiple.toFixed(2)}</span>
+    </div>
+  </div>`;
+}
+function doPrint(){
+  const mount=document.getElementById('print-mount');
+  mount.innerHTML=renderPrintSheet(state.current);
+  window.print();
+}
+
+/* =========================================================
+   액션
+========================================================= */
+/* 수정 내용 추적: 저장 시점에 이전 스냅샷과 비교해 '무엇을 어떻게' 바꿨는지 문장으로 남긴다. */
+function snapshotForDiff(s){
+  const t=computeTotals(s);
+  const pk=s.packingOverride||{}, lg=s.logisticsOverride||{};
+  return {
+    styleNo:s.styleNo||'', itemName:s.itemName||'', saleName:s.saleName||'', season:s.season||'', round:s.round||1,
+    manager:s.manager||'', categoryId:s.categoryId||'', finalSalePrice:num(s.finalSalePrice),
+    patternCost:num(s.patternCost), sampleCost:num(s.sampleCost), laborFee:num(s.laborFee), finishing:num(s.finishing), etc:num(s.etc),
+    leaflet:num(s.leaflet), returnExchange:num(s.returnExchange),
+    fabricCount:(s.fabricRows||[]).length, trimCount:(s.trimRows||[]).length, labelCount:(s.labelRows||[]).length,
+    imageCount:(s.images||[]).length,
+    qtyTotal:t.qtyTotal, grand:Math.round(t.grand), vat:Math.round(t.vat),
+    packing:JSON.stringify(pk), logistics:JSON.stringify(lg)
+  };
+}
+function diffSheets(before, after){
+  if(!before) return [];
+  const chg=[];
+  const won2=(v)=>Number(v).toLocaleString('ko-KR')+'원';
+  const catName=(id)=>{ const c=state.categories.find(x=>x.id===id); return c?c.name:'(없음)'; };
+  const label={
+    styleNo:'스타일번호', itemName:'품명', saleName:'판매상품명', season:'시즌', round:'차수',
+    manager:'담당자', finalSalePrice:'최종판매가', patternCost:'패턴비', sampleCost:'샘플비',
+    laborFee:'임가공비', finishing:'시야게', etc:'기타비용', leaflet:'리플렛', returnExchange:'교환반품비',
+    qtyTotal:'총수량'
+  };
+  // 텍스트/숫자 필드
+  ['styleNo','itemName','saleName','season','manager'].forEach(k=>{
+    if((before[k]||'')!==(after[k]||'')) chg.push(`${label[k]}: "${before[k]||'-'}" → "${after[k]||'-'}"`);
+  });
+  ['round','finalSalePrice','patternCost','sampleCost','laborFee','finishing','etc','leaflet','returnExchange','qtyTotal'].forEach(k=>{
+    if(num(before[k])!==num(after[k])){
+      const isMoney=!['round','qtyTotal'].includes(k);
+      chg.push(`${label[k]}: ${isMoney?won2(before[k]):before[k]} → ${isMoney?won2(after[k]):after[k]}`);
+    }
+  });
+  // 카테고리
+  if((before.categoryId||'')!==(after.categoryId||'')) chg.push(`구분: ${catName(before.categoryId)} → ${catName(after.categoryId)}`);
+  // 행 개수 변화
+  if(before.fabricCount!==after.fabricCount) chg.push(`원단 항목 ${before.fabricCount}→${after.fabricCount}개`);
+  if(before.trimCount!==after.trimCount) chg.push(`부자재 항목 ${before.trimCount}→${after.trimCount}개`);
+  if(before.labelCount!==after.labelCount) chg.push(`라벨 항목 ${before.labelCount}→${after.labelCount}개`);
+  if(before.imageCount!==after.imageCount) chg.push(`이미지 ${before.imageCount}→${after.imageCount}장`);
+  // 포장/물류 단가 세부 변화
+  if(before.packing!==after.packing) chg.push('포장자재 단가 변경');
+  if(before.logistics!==after.logistics) chg.push('물류비 단가 변경');
+  // 총합계/VAT 변화 (다른 변경의 결과지만 요약으로 유용)
+  if(before.grand!==after.grand) chg.push(`원가합계 ${won2(before.grand)} → ${won2(after.grand)}`);
+  return chg;
+}
+async function saveSheet(){
+  const s=state.current; s.updatedAt=Date.now();
+  if(!s.baseStyleNo) s.baseStyleNo = s.styleNo || '';   // 차수 묶음 키 기본값
+  if(!s.round) s.round = 1;
+  // 수정 내용 계산 (이전 스냅샷 대비)
+  const after=snapshotForDiff(s);
+  const isNew = !state.index.some(x=>x.id===s.id);
+  const changes = isNew ? ['신규 작성'] : diffSheets(state.editorSnapshot, after);
+  // 수정자 로그
+  s.lastEditedBy = state.currentUser || '(미지정)';
+  s.lastEditedAt = s.updatedAt;
+  s.editLog = Array.isArray(s.editLog) ? s.editLog : [];
+  // 변경사항이 있을 때만 기록 (단순 재저장은 기록 생략)
+  if(changes.length){
+    s.editLog.push({by:s.lastEditedBy, at:s.updatedAt, changes:changes});
+    if(s.editLog.length>30) s.editLog = s.editLog.slice(-30);
+  }
+  const cat=state.categories.find(c=>c.id===s.categoryId);
+  const t=computeTotals(s);
+  const ok=await saveSheetData(s);
+  const summary={id:s.id,styleNo:s.styleNo,baseStyleNo:s.baseStyleNo,round:s.round,season:s.season||'',itemName:s.itemName,saleName:s.saleName||'',categoryName:cat?cat.name:'',grand:t.grand,vat:t.vat,multiple:t.multiple,qtyTotal:t.qtyTotal,finalSalePrice:s.finalSalePrice,updatedAt:s.updatedAt,lastEditedBy:s.lastEditedBy,thumb:s.images[0]||null};
+  const i=state.index.findIndex(x=>x.id===summary.id);
+  if(i>=0)state.index[i]=summary; else state.index.unshift(summary);
+  await saveIndex(state.index);
+  state.editorSnapshot=after;   // 저장 후 스냅샷 갱신 (다음 수정 기준)
+  toast(ok?('저장되었습니다 · '+s.lastEditedBy+(changes.length&&!isNew?' · '+changes.length+'건 변경':'')):'저장 실패 — DB 연결을 확인하세요');
+  render();
+}
+function duplicateSheet(){
+  const c=JSON.parse(JSON.stringify(state.current));
+  c.id=genId('sheet'); c.styleNo=(c.styleNo||'')+'-COPY'; c.baseStyleNo=c.styleNo; c.round=1; c.createdAt=Date.now(); c.updatedAt=Date.now();
+  state.current=c; render(); toast('복제했습니다. 저장을 눌러 등록하세요.');
+}
+let LOADPANEL_OPEN=false;
+function openLoadPanel(){
+  LOADPANEL_OPEN=true;
+  const panel=document.getElementById('load-panel');
+  if(panel) panel.classList.add('show');
+  // 시즌/구분 드롭다운 채우기
+  const seaSel=document.getElementById('lp-season');
+  const catSel=document.getElementById('lp-category');
+  if(seaSel){
+    const seasons=[...new Set(state.index.map(x=>x.season||'26SS').filter(Boolean))];
+    seaSel.innerHTML='<option value="">전체 시즌</option>'+seasons.map(s=>`<option value="${esc(s)}">${esc(s)}</option>`).join('');
+  }
+  if(catSel){
+    const cats=[...new Set(state.index.map(x=>x.categoryName).filter(Boolean))].sort();
+    catSel.innerHTML='<option value="">전체 구분</option>'+cats.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('');
+  }
+  renderLoadPanelList();
+}
+function closeLoadPanel(){
+  LOADPANEL_OPEN=false;
+  const panel=document.getElementById('load-panel');
+  if(panel) panel.classList.remove('show');
+}
+function renderLoadPanelList(){
+  const listEl=document.getElementById('lp-list');
+  const countEl=document.getElementById('lp-count');
+  if(!listEl) return;
+  const sea=document.getElementById('lp-season')?.value||'';
+  const cat=document.getElementById('lp-category')?.value||'';
+  // baseStyleNo 로 묶어 대표 1건(최신 차수)만, 필터 적용
+  const seen={}; const items=[];
+  state.index
+    .filter(x=>(!sea||(x.season||'26SS')===sea) && (!cat||x.categoryName===cat))
+    .sort((a,b)=> (a.styleNo||'').localeCompare(b.styleNo||''))
+    .forEach(x=>{ const key=x.baseStyleNo||x.styleNo; if(seen[key])return; seen[key]=1; items.push(x); });
+  if(countEl) countEl.textContent=items.length+'개';
+  if(!items.length){ listEl.innerHTML='<div class="ql-empty">해당 조건의 상품이 없습니다</div>'; return; }
+  listEl.innerHTML=items.map(x=>`<div class="ql-item" data-action="quick-open" data-id="${x.id}">
+    <span class="ql-style">${esc(x.styleNo)||'-'}</span>
+    <span class="ql-name">${esc(x.itemName)||'-'}</span>
+    ${x.categoryName?`<span class="cat-chip">${esc(x.categoryName)}</span>`:''}
+    ${x.season?`<span class="season-chip">${esc(x.season)}</span>`:''}
+  </div>`).join('');
+}
+function addSeason(){
+  const name=(prompt('추가할 시즌을 입력하세요 (예: 26FW, 27SS)','')||'').trim().toUpperCase();
+  if(!name) return;
+  if(state.seasons.includes(name)){ toast('이미 있는 시즌입니다'); state.seasonFilter=name; render(); return; }
+  state.seasons.push(name);
+  saveSeasons(state.seasons);
+  state.seasonFilter=name;
+  render();
+  toast(name+' 시즌을 추가했습니다');
+}
+function delSeason(name, btn){
+  if(!name) return;
+  const used = state.index.filter(x=>(x.season||'26SS')===name).length;
+  if(used>0){
+    if(btn && btn.dataset.armed!=='1'){
+      btn.dataset.armed='1'; const o=btn.textContent; btn.dataset.o=o; btn.textContent='!'; btn.title=name+' 시즌에 '+used+'개 상품이 있습니다. 다시 누르면 시즌만 목록에서 제거(상품은 유지)';
+      clearTimeout(btn.__t); btn.__t=setTimeout(()=>{btn.dataset.armed='0';btn.textContent=btn.dataset.o;},4000);
+      return;
+    }
+  }
+  state.seasons=state.seasons.filter(s=>s!==name);
+  saveSeasons(state.seasons);
+  if(state.seasonFilter===name) state.seasonFilter='';
+  render();
+  toast(name+' 시즌을 삭제했습니다'+(used>0?' (상품은 유지됨)':''));
+}
+function manageUsers(){
+  const cur=(state.users||[]).join('\n');
+  const input=prompt('작업자 목록을 한 줄에 하나씩 입력하세요.\n(추가·삭제·수정 가능. 저장하면 전 직원에게 공유됩니다)', cur);
+  if(input===null) return;
+  const list=input.split('\n').map(s=>s.trim()).filter(Boolean);
+  // 중복 제거
+  state.users=[...new Set(list)];
+  saveUsers(state.users);
+  toast('작업자 목록을 저장했습니다 ('+state.users.length+'명)');
+}
+function addRound(){
+  const src=state.current;
+  const base = src.baseStyleNo || src.styleNo || '';
+  // 같은 baseStyleNo 중 가장 높은 차수 + 1
+  let maxRound = 1;
+  state.index.forEach(x=>{ if((x.baseStyleNo||x.styleNo)===base && (x.round||1)>maxRound) maxRound=x.round||1; });
+  const c=JSON.parse(JSON.stringify(src));
+  c.id=genId('sheet');
+  c.baseStyleNo=base;
+  c.styleNo=src.styleNo||base;
+  c.round=maxRound+1;
+  c.createdAt=Date.now(); c.updatedAt=Date.now();
+  // 리오더는 일회성 개발비용이 없음 → 패턴비/샘플비 0, 개발비 자동(=0)
+  c.patternCost=0; c.sampleCost=0; c.devCost=0; c.devCostManual=false;
+  // 수량만 새로 입력하도록 0으로 초기화 (나머지는 이미지 포함 전부 동일하게 유지)
+  c.colorRows=c.colorRows.map(r=>{ const q={}; c.sizes.forEach(sz=>q[sz]=0); return {color:r.color, qty:q}; });
+  state.current=c; state.tab='editor'; render();
+  toast(c.round+'차(리오더) 계산서를 만들었습니다. 수량만 새로 입력한 뒤 저장하세요. (패턴·샘플비 0, 단가·이미지 유지)');
+}
+async function cloneFrom(id){
+  const src=await loadSheet(id) || SEED.sheets.find(x=>x.id===id);
+  if(!src){ toast('원본을 불러오지 못했습니다'); return; }
+  const c=JSON.parse(JSON.stringify(src));
+  c.id=genId('sheet'); c.styleNo=''; c.itemName=(src.itemName||'')+' (복제)'; c.images=[]; c.createdAt=Date.now(); c.updatedAt=Date.now();
+  state.current=c; state.tab='editor'; render(); toast('구조를 복제했습니다. Style No.를 입력하세요.');
+}
+async function handleDeleteSheet(){
+  await deleteSheetData(state.current.id);
+  state.index=state.index.filter(x=>x.id!==state.current.id);
+  await saveIndex(state.index);
+  state.current=newBlankSheet(); state.tab='search'; render(); toast('삭제되었습니다');
+}
+function renderEditHistory(s){
+  if(!s.lastEditedBy && !(s.editLog&&s.editLog.length)) return '';
+  const log=(s.editLog||[]).slice().reverse();  // 최신 먼저
+  const head=`<div class="edit-meta">최근 수정: <b>${esc(s.lastEditedBy||'-')}</b> · ${s.lastEditedAt?new Date(s.lastEditedAt).toLocaleString('ko-KR'):''}</div>`;
+  if(!log.length) return head;
+  const items=log.slice(0,8).map(e=>{
+    const when=e.at?new Date(e.at).toLocaleString('ko-KR'):'';
+    const changes=(e.changes&&e.changes.length)?e.changes:['(변경 내역 없음)'];
+    return `<div class="hist-entry">
+      <div class="hist-head"><span class="hist-by">${esc(e.by||'-')}</span><span class="hist-when">${when}</span></div>
+      <ul class="hist-changes">${changes.map(c=>`<li>${esc(c)}</li>`).join('')}</ul>
+    </div>`;
+  }).join('');
+  return `${head}
+    <details class="edit-history">
+      <summary>수정 이력 ${log.length}건 보기</summary>
+      <div class="hist-list">${items}</div>
+    </details>`;
+}
+async function loadSheetIntoEditor(id){
+  const sh=await loadSheet(id);
+  if(sh){ sh.packingOverride=sh.packingOverride||{}; sh.logisticsOverride=sh.logisticsOverride||{}; state.current=sh; state.editorSnapshot=snapshotForDiff(sh); state.tab='editor'; render(); }
+  else toast('불러오기 실패');
+}
+async function persistCategories(){ const ok=await saveCategories(state.categories); toast(ok?'카테고리 DB가 저장되었습니다':'저장 실패'); }
+
+/* ===== 전체 백업 / 복원 ===== */
+async function exportBackup(){
+  toast('백업 데이터를 모으는 중…');
+  const backup={ _meta:{ app:'lcdv-cost', version:1, exportedAt:new Date().toISOString(), exportedBy:state.currentUser||'' },
+    categories:state.categories, index:state.index, seasons:state.seasons, users:state.users, sheets:{} };
+  // 각 시트 본문 수집 (DB 우선, 실패 시 시드)
+  for(const x of state.index){
+    let sh=null;
+    try{ sh=await loadSheet(x.id); }catch(e){}
+    if(!sh) sh=SEED.sheets.find(s=>s.id===x.id);
+    if(sh) backup.sheets[x.id]=sh;
+  }
+  const json=JSON.stringify(backup,null,2);
+  const blob=new Blob([json],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  const stamp=new Date().toISOString().slice(0,10);
+  a.href=url; a.download=`lcdv_backup_${stamp}.json`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+  toast('백업 파일을 다운로드했습니다 ('+Object.keys(backup.sheets).length+'개 상품)');
+}
+
+function triggerImport(){
+  const f=document.getElementById('import-file');
+  if(f) f.click();
+}
+async function importBackup(file){
+  if(!file) return;
+  let backup;
+  try{ backup=JSON.parse(await file.text()); }catch(e){ toast('파일을 읽을 수 없습니다 (JSON 아님)'); return; }
+  if(!backup || !backup.categories || !backup.sheets){ toast('올바른 백업 파일이 아닙니다'); return; }
+  const cnt=Object.keys(backup.sheets).length;
+  const ok=confirm(`백업을 복원하면 현재 DB의 데이터가 이 백업 내용으로 덮어써집니다.\n\n백업 시점: ${backup._meta?backup._meta.exportedAt:'알 수 없음'}\n상품 ${cnt}개, 카테고리 ${backup.categories.length}개\n\n계속하시겠습니까?`);
+  if(!ok) return;
+  if(!hasStorage()){ toast('DB에 연결되어 있지 않아 복원할 수 없습니다'); return; }
+  toast('복원 중… 잠시만 기다리세요');
+  try{
+    await saveCategories(backup.categories);
+    if(Array.isArray(backup.seasons)) await saveSeasons(backup.seasons);
+    if(Array.isArray(backup.users)) await saveUsers(backup.users);
+    for(const id in backup.sheets){ await saveSheetData(backup.sheets[id]); }
+    if(Array.isArray(backup.index)) await saveIndex(backup.index);
+    toast('복원 완료 ('+cnt+'개 상품). 새로고침합니다.');
+    setTimeout(()=>location.reload(),1200);
+  }catch(e){ console.error(e); toast('복원 중 오류가 발생했습니다'); }
+}
+function exportCSV(){
+  const h=['Style No','품명','카테고리','원가합계','VAT포함','배수','최종판매가','수정일'];
+  const rows=state.index.map(x=>[x.styleNo,x.itemName,x.categoryName,Math.round(x.grand||0),Math.round(x.vat||0),(x.multiple||0).toFixed(2),x.finalSalePrice||0,new Date(x.updatedAt).toLocaleDateString('ko-KR')]);
+  const csv=[h,...rows].map(r=>r.map(v=>`"${String(v==null?'':v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8;'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='르쏭드비_원가계산서_목록.csv'; document.body.appendChild(a); a.click(); a.remove();
+}
+
+/* 이미지 압축: 장당 목표 용량(기본 190KB) 이하가 되도록
+   해상도(최대 폭)와 JPEG 품질을 단계적으로 낮춰가며 맞춘다.
+   base64 data URL 은 원본보다 약 1.37배 커지므로, 바이트 기준으로 계산해 마진을 둔다. */
+function dataUrlBytes(dataUrl){
+  const i = dataUrl.indexOf(',');
+  const b64 = dataUrl.slice(i+1);
+  return Math.floor(b64.length * 3 / 4);   // base64 → 실제 바이트
+}
+function drawToDataUrl(img, maxW, q){
+  let w = img.width, h = img.height;
+  if(w > maxW){ h = Math.round(h * (maxW / w)); w = maxW; }
+  const cv = document.createElement('canvas');
+  cv.width = w; cv.height = h;
+  cv.getContext('2d').drawImage(img, 0, 0, w, h);
+  return cv.toDataURL('image/jpeg', q);
+}
+function compressImage(file, targetBytes){
+  targetBytes = targetBytes || 190*1024;
+  return new Promise((res, rej)=>{
+    const r = new FileReader();
+    r.onload = ev=>{
+      const im = new Image();
+      im.onload = ()=>{
+        const widths = [1000, 860, 720, 600, 500, 420];
+        const qualities = [0.72, 0.6, 0.5, 0.42, 0.35];
+        let best = null;
+        for(const w of widths){
+          for(const q of qualities){
+            const out = drawToDataUrl(im, w, q);
+            const bytes = dataUrlBytes(out);
+            best = out; // 항상 최신 결과를 보관 (마지막 = 가장 작은 조합)
+            if(bytes <= targetBytes){ res(out); return; }
+          }
+        }
+        res(best); // 목표에 못 미쳐도 가능한 가장 작은 버전 반환
+      };
+      im.onerror = rej;
+      im.src = ev.target.result;
+    };
+    r.onerror = rej;
+    r.readAsDataURL(file);
+  });
+}
+
+async function handleImageFiles(files){
+  for(const f of Array.from(files)){
+    if(!f.type.startsWith('image/'))continue;
+    if(state.current.images.length>=4){ toast('이미지는 최대 4장'); break; }
+    try{
+      const out = await compressImage(f, 190*1024);
+      const kb = Math.round(dataUrlBytes(out)/1024);
+      state.current.images.push(out);
+      toast('이미지 추가됨 (약 '+kb+'KB로 압축)');
+    }catch(e){ console.error(e); toast('이미지 처리 실패'); }
+  }
+  renderTab();
+}
+
+function armDelete(btn,fn,label){
+  if(btn.dataset.armed==='1'){ fn(); return; }
+  btn.dataset.armed='1'; btn.dataset.orig=btn.textContent; btn.textContent=label||'한번 더 클릭'; btn.classList.add('danger-armed');
+  clearTimeout(btn.__t); btn.__t=setTimeout(()=>{btn.dataset.armed='0';btn.textContent=btn.dataset.orig;btn.classList.remove('danger-armed');},4000);
+}
+
+/* =========================================================
+   이벤트
+========================================================= */
+mainEl.addEventListener('input',e=>{
+  const t=e.target;
+  if(t.dataset.bind){ let v=t.value; if(t.dataset.type==='number')v=parseFloat(v)||0; setPath(state.current,t.dataset.bind,v); refreshAllComputed(); }
+  else if(t.dataset.catBind){ const [i,f]=t.dataset.catBind.split(/\.(.+)/); let v=t.value; if(t.type==='number')v=parseFloat(v)||0; state.categories[i][f]=v; }
+  else if(t.id==='search-query'||t.id==='search-category'){ renderSearchResults(); }
+  else if(t.id==='cat-search'){ const q=t.value.trim().toLowerCase(); document.querySelectorAll('#cat-tbody tr').forEach(tr=>{ tr.style.display=(!q||tr.dataset.catName.includes(q))?'':'none'; }); }
+});
+mainEl.addEventListener('change',e=>{
+  const t=e.target;
+  if(t.id==='select-category'){
+    const cat=state.categories.find(c=>c.id===t.value); state.current.categoryId=t.value;
+    if(cat){ state.current.packingOverride={poly:cat.poly,hanger:cat.hanger,box:cat.box,qualityTag:cat.qualityTag,brandTag:cat.brandTag,tagRing:cat.tagRing,caseCost:cat.caseCost,dustbag:cat.dustbag};
+             state.current.logisticsOverride={inspection:cat.inspection,barcode:cat.barcode,qc:cat.qc,packing:cat.packing,picking:cat.picking,shipping:cat.shipping}; }
+    else { state.current.packingOverride={}; state.current.logisticsOverride={}; }
+    renderTab();
+  }
+  if(t.id==='file-input'){ handleImageFiles(t.files); t.value=''; }
+  if(t.id==='import-file'){ if(t.files&&t.files[0]){ importBackup(t.files[0]); t.value=''; } }
+  if(t.id==='lp-season' || t.id==='lp-category'){ renderLoadPanelList(); }
+  if(t.id==='devcost-manual-toggle'){
+    state.current.devCostManual = t.checked;
+    if(!t.checked){ state.current.devCost = 0; }  // 자동모드로 돌아가면 수기값 제거(자동계산이 대체)
+    renderTab();
+  }
+});
+mainEl.addEventListener('click',e=>{
+  const t=e.target;
+  if(t.id==='dropzone'){ document.getElementById('file-input').click(); return; }
+  const btn=e.target.closest('[data-action]'); if(!btn)return;
+  const a=btn.dataset.action; const idx=btn.dataset.idx!==undefined?parseInt(btn.dataset.idx):null;
+  switch(a){
+    case 'add-fabricRows': state.current.fabricRows.push(blankMaterialRow()); renderTab(); break;
+    case 'del-fabricRows': state.current.fabricRows.splice(idx,1); renderTab(); break;
+    case 'add-trimRows': state.current.trimRows.push(blankMaterialRow()); renderTab(); break;
+    case 'del-trimRows': state.current.trimRows.splice(idx,1); renderTab(); break;
+    case 'add-labelRows': state.current.labelRows.push({name:'',unitPrice:0,qty:1}); renderTab(); break;
+    case 'del-labelRows': state.current.labelRows.splice(idx,1); renderTab(); break;
+    case 'add-color': { const q={}; state.current.sizes.forEach(sz=>q[sz]=0); state.current.colorRows.push({color:'',qty:q}); renderTab(); break; }
+    case 'del-color': state.current.colorRows.splice(idx,1); renderTab(); break;
+    case 'add-size': { const inp=document.getElementById('new-size-name'); const n=(inp.value||'').trim(); if(n&&!state.current.sizes.includes(n)){ state.current.sizes.push(n); state.current.colorRows.forEach(r=>r.qty[n]=0); } renderTab(); break; }
+    case 'del-size': { const sz=btn.dataset.size; state.current.sizes=state.current.sizes.filter(x=>x!==sz); state.current.colorRows.forEach(r=>delete r.qty[sz]); renderTab(); break; }
+    case 'remove-image': state.current.images.splice(idx,1); renderTab(); break;
+    case 'save-sheet': saveSheet(); break;
+    case 'duplicate-sheet': duplicateSheet(); break;
+    case 'new-sheet': state.current=newBlankSheet(); state.tab='editor'; render(); break;
+    case 'delete-sheet': armDelete(btn,handleDeleteSheet,'삭제하려면 한번 더'); break;
+    case 'print-sheet': doPrint(); break;
+    case 'export-csv': exportCSV(); break;
+    case 'load-sheet': loadSheetIntoEditor(btn.dataset.id); break;
+    case 'quick-open': {
+      closeLoadPanel();
+      loadSheetIntoEditor(btn.dataset.id);
+      break;
+    }
+    case 'toggle-loadpanel': {
+      if(LOADPANEL_OPEN) closeLoadPanel(); else openLoadPanel();
+      break;
+    }
+    case 'toggle-group': {
+      const key=btn.dataset.key;
+      const kesc=(window.CSS&&CSS.escape)?CSS.escape(key):key.replace(/"/g,'\\"');
+      document.querySelectorAll('.child-row[data-group="'+kesc+'"]').forEach(tr=>tr.classList.toggle('hidden'));
+      btn.classList.toggle('open');
+      const hint=btn.querySelector('.expand-hint');
+      if(hint){ hint.textContent = btn.classList.contains('open')?'▾ 접기':'▸ 펼치기'; }
+      break;
+    }
+    case 'add-round': addRound(); break;
+    case 'season-filter': state.seasonFilter=btn.dataset.season||''; render(); break;
+    case 'sort': {
+      const k=btn.dataset.key;
+      if(state.sortKey===k){ state.sortDir=state.sortDir==='asc'?'desc':'asc'; }
+      else { state.sortKey=k; state.sortDir=(k==='styleNo'||k==='itemName'||k==='categoryName')?'asc':'desc'; }
+      renderSearchResults();
+      break;
+    }
+    case 'add-season': addSeason(); break;
+    case 'del-season': delSeason(btn.dataset.season, btn); break;
+    case 'manage-users': manageUsers(); break;
+    case 'save-categories': persistCategories(); break;
+    case 'export-backup': exportBackup(); break;
+    case 'import-backup': triggerImport(); break;
+    case 'add-category': state.categories.push(blankCategory()); render(); break;
+    case 'del-category': armDelete(btn,()=>{state.categories.splice(idx,1);render();},'삭제하려면 한번 더'); break;
+    case 'reset-categories': armDelete(btn,async()=>{ state.categories=JSON.parse(JSON.stringify(SEED.categories)); render(); await saveCategories(state.categories); toast('엑셀 기본값으로 초기화되었습니다'); },'덮어쓰려면 한번 더'); break;
+  }
+});
+mainEl.addEventListener('dragover',e=>{ if(e.target.id==='dropzone'||e.target.closest('#dropzone'))e.preventDefault(); });
+mainEl.addEventListener('drop',e=>{ if(e.target.id==='dropzone'||e.target.closest('#dropzone')){ e.preventDefault(); handleImageFiles(e.dataTransfer.files); } });
+document.querySelectorAll('.tab-btn').forEach(b=>b.addEventListener('click',()=>{ state.tab=b.dataset.tab; render(); }));
+
+/* =========================================================
+   부팅
+========================================================= */
+function showBanner(msg){ const bar=document.createElement('div'); bar.className='no-print'; bar.style.cssText='background:#EAE3D2;color:#5A4E33;border-bottom:1px solid #D8CBA8;padding:9px 30px;font-size:12px;text-align:center;letter-spacing:.02em;'; bar.textContent=msg; document.body.insertBefore(bar,document.body.firstChild); }
+
+async function seedFirstRun(){
+  // 카테고리 + 39개 시트를 공용 DB에 최초 1회 업로드
+  await saveCategories(JSON.parse(JSON.stringify(SEED.categories)));
+  const idx=[];
+  for(const raw of SEED.sheets){
+    const s=JSON.parse(JSON.stringify(raw));
+    await saveSheetData(s);
+    const t=computeTotals(s);
+    const cat=SEED.categories.find(c=>c.id===s.categoryId);
+    idx.push({id:s.id,styleNo:s.styleNo,baseStyleNo:s.baseStyleNo||s.styleNo,round:s.round||1,season:s.season||'',itemName:s.itemName,saleName:s.saleName||'',categoryName:cat?cat.name:'',grand:t.grand,vat:t.vat,multiple:t.multiple,qtyTotal:t.qtyTotal,finalSalePrice:s.finalSalePrice,updatedAt:s.updatedAt,thumb:null});
+  }
+  await saveIndex(idx);
+  return idx;
+}
+
+async function loadAllData(){
+  let cats=null;
+  try{ cats=await loadCategories(); }catch(e){}
+  let firstRun=false;
+  if(!cats||!Array.isArray(cats)||!cats.length){ firstRun=true; cats=JSON.parse(JSON.stringify(SEED.categories)); }
+  state.categories=cats;
+
+  // 시즌 목록 로드 (없으면 시드 기본값)
+  let seasons=null;
+  try{ seasons=await loadSeasons(); }catch(e){}
+  if(!seasons||!seasons.length){ seasons=(SEED.seasons&&SEED.seasons.length)?SEED.seasons.slice():['26SS']; if(hasStorage()){ try{ await saveSeasons(seasons); }catch(e){} } }
+  state.seasons=seasons;
+
+  // 작업자 목록 로드
+  let users=null;
+  try{ users=await loadUsers(); }catch(e){}
+  if(!users||!users.length){ users=(SEED.users&&SEED.users.length)?SEED.users.slice():[]; if(hasStorage()&&users.length){ try{ await saveUsers(users); }catch(e){} } }
+  state.users=users;
+
+  let idx=[];
+  try{ idx=await loadIndex(); }catch(e){}
+  if(!Array.isArray(idx)) idx=[];
+
+  if(firstRun && hasStorage()){
+    // 공용 DB에 아직 아무것도 없음 → 39개 시트 시드 업로드
+    try{ idx=await seedFirstRun(); }catch(e){ console.error('seed fail',e); }
+  } else if(firstRun && !hasStorage()){
+    // DB 미연결 미리보기: 화면에서만 시드 보여주기
+    idx=SEED.sheets.map(s=>{ const t=computeTotals(s); const cat=SEED.categories.find(c=>c.id===s.categoryId); return {id:s.id,styleNo:s.styleNo,baseStyleNo:s.baseStyleNo||s.styleNo,round:s.round||1,season:s.season||'',itemName:s.itemName,saleName:s.saleName||'',categoryName:cat?cat.name:'',grand:t.grand,vat:t.vat,multiple:t.multiple,qtyTotal:t.qtyTotal,finalSalePrice:s.finalSalePrice,updatedAt:s.updatedAt,thumb:null}; });
+  }
+  state.index=idx;
+
+  // 오래된 DB 인덱스 자기치유 + 레거시 리오더 병합
+  if(idx.length && hasStorage()){
+    const needsHeal = idx.some(x =>
+      x.qtyTotal===undefined || x.baseStyleNo===undefined || x.round===undefined || x.multiple===undefined
+      || /[-(]?리오더|리오더\)|\(2\)|-2$/.test((x.styleNo||'')+(x.itemName||''))
+    );
+    if(needsHeal){
+      let changed=false;
+      for(const x of idx){
+        let sh=null;
+        try{ sh=await loadSheet(x.id); }catch(e){}
+        if(!sh) sh=SEED.sheets.find(s=>s.id===x.id);
+        if(!sh) continue;
+
+        // --- 레거시 리오더 정규화 ---
+        const raw=(sh.styleNo||'')+' '+(sh.itemName||'');
+        const isReorder = /리오더|\(2\)/.test(raw) || /-2$/.test(sh.styleNo||'');
+        if(isReorder && (sh.baseStyleNo===undefined || sh.round===undefined || /리오더|-리오더|\(2\)|-2$/.test(sh.styleNo||''))){
+          const base=(sh.styleNo||'').replace(/-리오더$/,'').replace(/-2$/,'').trim();
+          sh.baseStyleNo=base;
+          sh.styleNo=base;
+          sh.itemName=(sh.itemName||'').replace(/\s*\(리오더\)\s*/,'').replace(/\s*\(2\)\s*/,'').trim();
+          sh.round=sh.round&&sh.round>1?sh.round:2;
+          sh.patternCost=0; sh.sampleCost=0; sh.devCost=0; sh.devCostManual=false;
+          try{ await saveSheetData(sh); }catch(e){}
+        }
+        if(sh.baseStyleNo===undefined) sh.baseStyleNo=sh.styleNo;
+        if(sh.round===undefined) sh.round=1;
+
+        // --- 인덱스 요약 재계산 ---
+        const t=computeTotals(sh);
+        x.styleNo=sh.styleNo; x.itemName=sh.itemName; x.saleName=sh.saleName||x.saleName||'';
+        x.baseStyleNo=sh.baseStyleNo; x.round=sh.round; x.season=sh.season||x.season||'26SS';
+        x.qtyTotal=t.qtyTotal; x.multiple=t.multiple; x.grand=t.grand; x.vat=t.vat;
+        changed=true;
+      }
+      if(changed){ try{ await saveIndex(idx); }catch(e){} }
+    }
+  }
+
+  if(idx.length){
+    let loaded=null;
+    if(hasStorage()){ try{ loaded=await loadSheet(idx[0].id); }catch(e){} }
+    if(!loaded) loaded=SEED.sheets.find(x=>x.id===idx[0].id);
+    state.current=loaded||newBlankSheet();
+  } else {
+    state.current=newBlankSheet();
+  }
+  // 자동완성 후보는 시드 전체에서 수집
+  harvestAutocomplete(SEED.sheets);
+}
+
+async function init(){
+  try{ await loadAllData(); }
+  catch(e){ console.error(e); state.categories=JSON.parse(JSON.stringify(SEED.categories)); state.current=newBlankSheet(); state.index=[]; harvestAutocomplete(SEED.sheets); }
+  render();
+  setConnBadge(hasStorage()&&STORAGE_OK);
+  const cu=document.getElementById('current-user');
+  if(cu && state.currentUser){ cu.textContent='◍ '+state.currentUser; }
+  if(!hasStorage()) showBanner('공용 DB가 설정되지 않았습니다. 지금은 저장되지 않는 미리보기 상태입니다. (설정 구역에 Supabase 키 입력 필요)');
+  else if(!STORAGE_OK) showBanner('공용 DB에 연결하지 못했습니다. 인터넷 연결과 app_kv 테이블 생성 여부를 확인하세요.');
+}
+
+/* ---- 로그인 게이트 ---- */
+const SESSION_KEY='lcdv_authed';
+const USER_KEY='lcdv_user';
+function bootApp(){ init(); }
+function gateUserOptions(){
+  const sel=document.getElementById('gate-user');
+  if(!sel) return;
+  const users=(state.users&&state.users.length)?state.users:(SEED.users||[]);
+  sel.innerHTML='<option value="">— 작업자 선택 —</option>'+users.map(u=>`<option value="${u.replace(/"/g,'&quot;')}">${u}</option>`).join('');
+  try{ const last=sessionStorage.getItem(USER_KEY); if(last) sel.value=last; }catch(e){}
+}
+
+async function showGate(){
+  const gate=document.getElementById('gate');
+  const err=document.getElementById('gate-err');
+  const stepLogin=document.getElementById('gate-step-login');
+  const stepUser=document.getElementById('gate-step-user');
+  const googleBtn=document.getElementById('gate-google');
+  const enterBtn=document.getElementById('gate-enter');
+  const signoutBtn=document.getElementById('gate-signout');
+  const userSel=document.getElementById('gate-user');
+  const welcome=document.getElementById('gate-welcome');
+
+  // Supabase 클라이언트 준비 (auth 사용에 필요)
+  initSupabase();
+
+  // 구글 로그인이 설정되지 않았거나 DB 미연결이면: 로그인 없이 통과 (오프라인/개발 모드)
+  if(!supa){
+    gate.classList.add('hidden');
+    bootApp();
+    return;
+  }
+
+  gate.classList.remove('hidden');
+
+  // 현재 로그인 세션 확인 (구글 리디렉션 후 복귀 포함)
+  let session=null;
+  try{ const { data } = await supa.auth.getSession(); session=data.session; }catch(e){}
+
+  function toLoginStep(){
+    stepLogin.style.display='';
+    stepUser.style.display='none';
+    err.textContent='';
+  }
+  function toUserStep(email){
+    stepLogin.style.display='none';
+    stepUser.style.display='';
+    err.textContent='';
+    if(welcome) welcome.textContent = email ? (email+' 로그인됨 · 작업자를 선택하세요') : '작업자를 선택하세요';
+    gateUserOptions();
+    if(userSel) userSel.focus();
+  }
+
+  function emailAllowed(email){
+    const list=(window.APP_CONFIG&&window.APP_CONFIG.ALLOWED_EMAILS)||[];
+    if(!list.length) return true;                       // 목록 비어있으면 제한 없음
+    return list.map(e=>e.toLowerCase()).includes((email||'').toLowerCase());
+  }
+
+  if(session && session.user){
+    const email=session.user.email||'';
+    if(emailAllowed(email)){
+      // 허용된 계정 → 작업자 선택 단계로
+      toUserStep(email);
+    } else {
+      // 허용되지 않은 계정 → 로그아웃 후 차단 안내
+      try{ await supa.auth.signOut(); }catch(e){}
+      toLoginStep();
+      err.textContent = email+' 계정은 접근 권한이 없습니다. 회사 계정으로 로그인하세요.';
+    }
+  } else {
+    // 로그인 필요
+    toLoginStep();
+  }
+
+  // 구글 로그인 버튼
+  if(googleBtn && !googleBtn.__wired){
+    googleBtn.__wired=true;
+    googleBtn.addEventListener('click', async ()=>{
+      err.textContent='';
+      try{
+        const redirectTo = window.location.origin + window.location.pathname;
+        const { error } = await supa.auth.signInWithOAuth({
+          provider:'google',
+          options:{ redirectTo }
+        });
+        if(error){ err.textContent='로그인 오류: '+error.message; }
+      }catch(e){ err.textContent='로그인을 시작할 수 없습니다.'; }
+    });
+  }
+
+  // 입장 버튼 (작업자 선택 후)
+  if(enterBtn && !enterBtn.__wired){
+    enterBtn.__wired=true;
+    enterBtn.addEventListener('click', ()=>{
+      const who=(userSel&&userSel.value)||'';
+      if(!who){ err.textContent='작업자를 선택해주세요.'; return; }
+      state.currentUser=who;
+      try{ sessionStorage.setItem(USER_KEY,who); }catch(e){}
+      gate.classList.add('hidden');
+      bootApp();
+    });
+  }
+
+  // 다른 계정으로 로그인 (로그아웃)
+  if(signoutBtn && !signoutBtn.__wired){
+    signoutBtn.__wired=true;
+    signoutBtn.addEventListener('click', async ()=>{
+      try{ await supa.auth.signOut(); }catch(e){}
+      try{ sessionStorage.removeItem(USER_KEY); }catch(e){}
+      toLoginStep();
+    });
+  }
+}
+
+/* Supabase SDK 를 동적으로 로드한다.
+   - 외부 <script src> 를 HTML에 두지 않아 아티팩트 로더가 멈추지 않는다.
+   - 로드 실패/지연 시에도 최대 대기 후 미연결 모드로 진행. */
+function loadSDK(cb){
+  if(typeof window.supabase!=='undefined' && window.supabase.createClient){ cb(); return; }
+  const cfg=window.APP_CONFIG||{};
+  const configured = cfg.SUPABASE_URL && !cfg.SUPABASE_URL.includes('붙여넣기');
+  if(!configured){ cb(); return; }           // 키가 없으면 미연결 모드로 바로 진행
+  let done=false;
+  const finish=()=>{ if(done)return; done=true; cb(); };
+  const s=document.createElement('script');
+  s.src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
+  s.onload=finish;
+  s.onerror=()=>{ window.__sdkFailed=true; finish(); };
+  document.head.appendChild(s);
+  setTimeout(finish, 4000);                   // 4초 안에 안 오면 그냥 진행
+}
+function startWhenReady(){ loadSDK(showGate); }
+if(document.readyState==='loading'){ document.addEventListener('DOMContentLoaded', startWhenReady); }
+else { startWhenReady(); }
+
+</script>
+</body>
+</html>
